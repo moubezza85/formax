@@ -1,0 +1,161 @@
+État actuel du projet
+Le projet a déjà une bonne base : FastAPI + SQLAlchemy, avec les modèles User, Trainer, Student, Training, Pack, Enrollment, Session, StudentPayment, TrainerPayment, Attendance, WizardDraft. Les routes API existent pour auth, users, trainings, packs, payments, sessions, attendance, reports, drafts .
+
+Ce qui manque — Par priorité
+1. Corrections & Compléments des Modèles (models.py)
+Trainer — champs manquants :
+
+python
+# Ajouter dans class Trainer:
+fixed_price_per_training = Column(Float, default=0.0)  # Forfait fixe par formation
+Le payment_mode est déjà là mais il faut un Enum explicite pour éviter les erreurs de saisie :
+
+python
+class TrainerPaymentMode(str, enum.Enum):
+    HOURLY = "hourly"
+    PER_STUDENT = "per_student"
+    FIXED = "fixed"
+    MONTHLY = "monthly"
+Student — champ manquant :
+
+python
+# Ajouter dans class Student:
+added_at = Column(DateTime(timezone=True), server_default=func.now())  # date_ajout
+created_at existe déjà, mais tu veux date_ajout sémantiquement distinct.
+
+Training — champs manquants :
+
+python
+# Ajouter dans class Training:
+masse_horaire = Column(Float)  # déjà total_hours → renommer ou garder les deux
+status = Column(String, default="draft")  # draft | active | completed
+TrainerAssignment — champ manquant :
+
+python
+# Ajouter dans class TrainerAssignment:
+payment_mode = Column(SqlEnum(TrainerPaymentMode))  # déjà String → typer avec Enum
+honoraire_payments = relationship("TrainerPayment", back_populates="assignment")
+Aussi : relier TrainerPayment à TrainerAssignment (lien manquant) :
+
+python
+# Dans TrainerPayment :
+assignment_id = Column(Integer, ForeignKey("trainer_assignments.id"), nullable=True)
+StudentPayment — champ manquant :
+
+python
+class StudentPaymentType(str, enum.Enum):
+    FULL = "full"
+    MONTHLY = "monthly"
+    INSTALLMENT = "installment"
+    FLEXIBLE = "flexible"
+
+# Ajouter :
+notes = Column(String, nullable=True)
+paid_by = Column(String, nullable=True)  # cash | virement | chèque
+Enrollment — champ manquant :
+
+python
+discount_rate = Column(Float, default=0.0)  # ✅ déjà présent
+payment_mode = Column(SqlEnum(StudentPaymentMode), default=StudentPaymentMode.FULL)  # NOUVEAU
+monthly_amount = Column(Float, nullable=True)   # si paiement mensuel
+installment_count = Column(Integer, nullable=True)  # si par tranche
+2. Nouveau Modèle : TrainingFormateur (relation M-M améliorée)
+Le TrainerAssignment existe mais il manque les honoraires payés par formateur par formation tracés proprement. Ajouter un flag is_primary pour distinguer le formateur principal des intervenants :
+
+python
+is_primary = Column(Boolean, default=False)  # dans TrainerAssignment
+3. Ce qui manque côté API (/api/)
+Route manquante	Description
+POST /wizard/training	Lancer le wizard multi-étapes (5 étapes)
+GET /wizard/training/{draft_id}	Reprendre un brouillon de wizard
+GET /reports/formation/{id}	Détail paiements par formation
+GET /reports/student/{id}	Historique complet paiements étudiant
+GET /reports/trainer/{id}	Historique honoraires formateur
+GET /reports/pack/{id}	Détail paiements par pack
+GET /enrollments/	Liste des inscriptions avec filtres
+POST /payments/trainer/	Enregistrer un paiement formateur
+GET /payments/trainer/{trainer_id}	Solde et historique honoraires
+4. Wizard de Lancement Formation — Architecture (Frontend)
+C'est la fonctionnalité centrale. Voici les 5 étapes du wizard React :
+
+text
+Étape 1 — Infos Formation
+  ├── Sélectionner une formation existante (autocomplete)
+  └── Ou créer une nouvelle (titre, description, tarif, dates, masse horaire)
+
+Étape 2 — Formateurs
+  ├── Rechercher formateurs existants → ajouter
+  ├── Créer un nouveau formateur (mini-form inline)
+  └── Pour chaque formateur : spécifier mode honoraire
+       (horaire | par étudiant | forfait | mensualité) + montant
+
+Étape 3 — Étudiants
+  ├── Rechercher étudiants existants → inscrire
+  ├── Créer nouveau compte étudiant (inline)
+  └── Pour chaque étudiant : taux de réduction (défaut 0%)
+
+Étape 4 — Paiements Étudiants
+  └── Pour chaque étudiant inscrit :
+       mode paiement (total | par mois | par tranche | à volonté)
+       + montant / nombre de mois / montant par tranche
+
+Étape 5 — Récapitulatif & Confirmation
+  ├── Tableau récap : formation, formateurs, étudiants, montants
+  └── Bouton "Lancer la formation"
+Le WizardDraft est déjà dans le modèle pour sauvegarder l'état et permettre de reprendre. Utilise le champ data_json pour stocker l'état de chaque étape.
+
+5. Module Pack — Ce qui manque
+Le modèle Pack a discount_rate mais il manque :
+
+python
+# Ajouter dans Pack :
+description = Column(Text, nullable=True)
+created_at = Column(DateTime(timezone=True), server_default=func.now())
+Côté logique : le prix final du pack = somme(formation.price) * (1 - pack.discount_rate). Cette formule doit être calculée dans le service au moment de l'inscription, pas stockée comme champ fixe (car les prix des formations peuvent changer).
+
+6. Rapports & Tableaux de Bord
+Voici les 4 vues de reporting demandées avec les données à afficher :
+
+Par Formation :
+
+Total inscrit, total encaissé, reste à payer, liste des paiements
+
+Honoraires totaux formateurs assignés, payés vs restants
+
+Par Étudiant :
+
+Formations / packs auxquels il est inscrit
+
+Historique de tous ses paiements (date, montant, type, solde)
+
+Taux de réduction appliqué par inscription
+
+Par Formateur :
+
+Formations effectuées, heures réalisées
+
+Honoraires calculés selon mode (heures × taux, forfait, etc.)
+
+Paiements reçus vs en attente
+
+Par Pack :
+
+Formations incluses, tarif brut, réduction, tarif final
+
+Étudiants inscrits et état de leurs paiements
+
+7. Idées Additionnelles 💡
+Alertes de solde : notifier l'admin quand un étudiant a un retard de paiement > X jours
+
+Certificat de fin de formation : générer un PDF (avec weasyprint) une fois la formation complétée
+
+Tableau de bord KPI : CA mensuel, nombre formations actives, taux de remplissage par formation, top formateurs
+
+Historique de présence par étudiant : taux d'assiduité visible dans la fiche étudiant (le modèle Attendance existe déjà )
+
+Export Excel/CSV des paiements pour comptabilité
+
+Système de notes/commentaires par inscription (feedback admin)
+
+Gestion des salles : le champ room existe dans Session → faire un planning visuel des salles
+

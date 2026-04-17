@@ -63,27 +63,47 @@ export default function LaunchTrainingPage() {
         </button>
       </div>
 
-      <div className="dashboard-grid">
-        {drafts.map(draft => (
-          <div key={draft.id} className="card cursor-pointer hover:border-primary transition-all" onClick={() => handleSelectDraft(draft)}>
-            <div className="flex justify-between items-start mb-1">
-              <div className="p-1 rounded-lg bg-primary-light text-primary">
-                <Save size={24} />
+      <div className="dashboard-grid grid-3">
+        {drafts.map(draft => {
+          const stats = draft.data_json || { trainers: [], students: [] };
+          return (
+            <div key={draft.id} className="card cursor-pointer hover:border-primary transition-all p-1-5 relative" onClick={() => handleSelectDraft(draft)}>
+              <div className="flex justify-between items-start mb-1">
+                <div className="p-1 rounded-xl bg-primary-light text-primary">
+                  <Clock size={24} />
+                </div>
+                <button className="btn-icon text-error hover:bg-error/10 p-0-5 rounded-full" onClick={(e) => handleDeleteDraft(e, draft.id)}>
+                  <Trash2 size={18} />
+                </button>
               </div>
-              <button className="btn-icon text-error" onClick={(e) => handleDeleteDraft(e, draft.id)}>
-                <Trash2 size={18} />
-              </button>
+              <h3 className="font-bold text-lg mb-0-5">{draft.name}</h3>
+              
+              <div className="flex gap-1 mb-1">
+                <div className="text-center bg-glass px-1 py-0-5 rounded flex-1">
+                  <div className="text-sm font-bold text-primary">{stats.trainers?.length || 0}</div>
+                  <div className="text-[10px] uppercase text-muted font-bold">Formateurs</div>
+                </div>
+                <div className="text-center bg-glass px-1 py-0-5 rounded flex-1">
+                  <div className="text-sm font-bold text-success">{stats.students?.length || 0}</div>
+                  <div className="text-[10px] uppercase text-muted font-bold">Étudiants</div>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between mt-1 pt-1 border-t border-surface-border">
+                <div className="flex items-center gap-0-5 text-sm font-bold text-primary">
+                  Étape {draft.current_step} / 5
+                </div>
+                <div className="text-[10px] text-muted font-bold">
+                  {new Date(draft.updated_at).toLocaleDateString()}
+                </div>
+              </div>
+              
+              <div className="mt-1-5 btn btn-sm btn-primary w-full justify-center">
+                Reprendre <ChevronRight size={14} />
+              </div>
             </div>
-            <h3 className="font-bold">{draft.name}</h3>
-            <div className="flex items-center gap-0-5 text-sm text-muted mt-1">
-              <Clock size={14} />
-              <span>Dernière modification : {new Date(draft.updated_at).toLocaleDateString()}</span>
-            </div>
-            <div className="mt-2 text-primary font-bold flex items-center gap-0-5">
-              Reprendre à l'étape {draft.current_step} <ChevronRight size={16} />
-            </div>
-          </div>
-        ))}
+          );
+        })}
         {drafts.length === 0 && (
           <div className="col-span-full card text-center p-3 text-muted">
             <p>Aucun brouillon enregistré.</p>

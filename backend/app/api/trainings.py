@@ -47,19 +47,113 @@ def delete_training(training_id: int, db: Session = Depends(get_db)):
     db.commit()
     return {"message": "Formation supprimée (soft delete)"}
 
-@router.post("/enroll", response_model=EnrollmentOut, dependencies=[Depends(check_role([UserRole.ADMIN]))])
-def enroll_student(enrollment_in: EnrollmentCreate, db: Session = Depends(get_db)):
-    final_price = PricingService.calculate_enrollment_price(db, enrollment_in)
-    
-    db_enrollment = Enrollment(
-        student_id=enrollment_in.student_id,
-        training_id=enrollment_in.training_id,
-        pack_id=enrollment_in.pack_id,
-        discount_rate=enrollment_in.discount_rate,
-        final_price=final_price,
-        status="active"
-    )
-    db.add(db_enrollment)
-    db.commit()
-    db.refresh(db_enrollment)
-    return db_enrollment
+@router.post("/launch", dependencies=[Depends(check_role([UserRole.ADMIN]))])
+def launch_training(data: dict, db: Session = Depends(get_db)):
+    """
+    Launch a training from wizard data.
+    data structure:
+    {
+        training: { id: int or None, title, description, price, masse_horaire, start_date, end_date },
+        trainers: [ { id: int or None, first_name, last_name, email, payment_mode, rate, is_primary } ],
+        students: [ { id: int or None, first_name, last_name, email, discount, payment_mode, upfront } ]
+    }
+    """
+    try:
+        # 1. Handle Training
+        t_data = data.get("training", {})
+        if t_data.get("id"):
+            training = db.query(Training).filter(Training.id == t_data["id"]).first()
+        else:
+            training = Training(
+                title=t_data["title"],
+                description=t_data.get("description"),
+                price=t_data["price"],
+                masse_horaire=t_data.get("masse_horaire"),
+                status="active"
+            )
+            db.add(training)
+            db.flush() # Get ID
+
+        # 2. Handle Trainers
+        for tr in data.get("trainers", []):
+            if tr.get("id"):
+                trainer_id = tr["id"]
+            else:
+                # Create NEW Trainer (User + Profile)
+                new_user = User(
+                    email=tr["email"],
+                    first_name=tr["first_name"],
+                    last_name=tr["last_name"],
+                    password_hash="hashed_default_password", # Should be changed
+                    role=UserRole.TRAINER
+                )
+                db.add(new_user)
+                db.flush()
+                new_trainer = Trainer(user_id=new_user.id, specialty="TBD")
+                db.add(new_trainer)
+                db.flush()
+                trainer_id = new_trainer.id
+            
+            # Assignment
+            assignment = TrainerAssignment(
+                trainer_id=trainer_id,
+                training_id=training.id,
+                payment_mode=tr["payment_mode"],
+                custom_rate=tr["rate"],
+                is_primary=tr.get("is_primary", False)
+            )
+            db.add(assignment)
+
+        # 3. Handle Students
+        for st in data.get("students", []):
+            if st.get("id"):
+                student_id = st["id"]
+            else:
+                # Create NEW Student (User + Profile)
+                new_user = User(
+                    email=st["email"],
+                    first_name=st["first_name"],
+                    last_name=st["last_name"],
+                    password_hash="hashed_default_password",
+                    role=UserRole.STUDENT
+                )
+                db.add(new_user)
+                db.flush()
+                new_student = Student(user_id=new_user.id)
+                db.add(new_student)
+                db.flush()
+                student_id = new_student.id
+            
+            # Calculation
+            final_price = training.price * (1 - (st.get("discount", 0) / 100))
+            
+            # Enrollment
+            enrollment = Enrollment(
+                student_id=student_id,
+                training_id=training.id,
+                discount_rate=st.get("discount", 0) / 100,
+                final_price=final_price,
+                payment_mode=st.get("payment_mode", "full"),
+                monthly_amount=st.get("monthly_amount"),
+                installment_count=st.get("installment_count"),
+                status="active"
+            )
+            db.add(enrollment)
+            db.flush()
+
+            # Record upfront payment if any
+            if st.get("upfront", 0) > 0:
+                payment = StudentPayment(
+                    enrollment_id=enrollment.id,
+                    amount=st["upfront"],
+                    payment_type=st.get("payment_mode", "full"),
+                    remaining_balance=final_price - st["upfront"],
+                    notes="Acompte initial au lancement"
+                )
+                db.add(payment)
+
+        db.commit()
+        return {"message": "Formation lancée avec succès", "training_id": training.id}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=400, detail=str(e))

@@ -66,17 +66,27 @@ export default function ActiveTrainingsPage() {
               </div>
             </div>
 
-            <div className="mt-2 pt-1 border-t border-surface-border flex justify-between items-center">
-              <div className="flex items-center gap-0-5 text-sm text-muted">
-                <BarChart size={14} />
-                <span>{Math.round(t.progress_percent)}% terminés</span>
+            <div className="mt-2 pt-1 border-t border-surface-border flex flex-col gap-1">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-0-5 text-sm text-muted">
+                  <BarChart size={14} />
+                  <span>{Math.round(t.progress_percent)}% terminés</span>
+                </div>
               </div>
-              <button 
-                className="btn btn-secondary bg-glass py-0-5 px-1"
-                onClick={() => window.location.href = `/formations/sessions/${t.id}`}
-              >
-                Gérer les Séances <ArrowRight size={16} />
-              </button>
+              <div className="flex gap-0-5">
+                <button 
+                  className="btn btn-secondary flex-1 py-0-5 px-0-5 text-xs"
+                  onClick={() => window.location.href = `/formations/sessions/${t.id}`}
+                >
+                  Séances
+                </button>
+                <button 
+                  className="btn btn-primary bg-glass text-primary flex-1 py-0-5 px-0-5 text-xs"
+                  onClick={() => window.location.href = `/reports/training/${t.id}`}
+                >
+                  <BarChart size={14} className="mr-0-5"/> Rapport
+                </button>
+              </div>
             </div>
           </div>
         ))}

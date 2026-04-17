@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { packService, trainingService } from '../services/api';
-import { Plus, Package, Edit2, Trash2, BookOpen, Clock, Tag } from 'lucide-react';
+import { Plus, Package, Edit2, Trash2, BookOpen, Clock, Tag, BarChart } from 'lucide-react';
 import Modal from '../components/Modal';
 
 export default function PacksPage() {
@@ -139,7 +139,15 @@ export default function PacksPage() {
                   <Clock size={12} /> {calculateTotalHours(p)} Heures au total
                 </div>
               </div>
-              <span className="tag tag-success">Actif</span>
+              <div className="flex gap-0-5 items-center">
+                <button 
+                  onClick={() => window.location.href = `/reports/pack/${p.id}`} 
+                  className="btn btn-secondary py-0-5 px-1 text-xs bg-glass"
+                >
+                  <BarChart size={14} className="mr-0-5" /> Rapport
+                </button>
+                <span className="tag tag-success">Actif</span>
+              </div>
             </div>
           </div>
         ))}

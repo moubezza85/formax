@@ -14,7 +14,11 @@ def get_packs(db: Session = Depends(get_db)):
 
 @router.post("/", response_model=PackOut, dependencies=[Depends(check_role([UserRole.ADMIN]))])
 def create_pack(pack_in: PackCreate, db: Session = Depends(get_db)):
-    db_pack = Pack(name=pack_in.name, discount_rate=pack_in.discount_rate)
+    db_pack = Pack(
+        name=pack_in.name, 
+        description=pack_in.description,
+        discount_rate=pack_in.discount_rate
+    )
     
     # Associate trainings
     trainings = db.query(Training).filter(Training.id.in_(pack_in.training_ids)).all()
@@ -33,6 +37,8 @@ def update_pack(pack_id: int, pack_in: PackUpdate, db: Session = Depends(get_db)
     
     if pack_in.name is not None:
         db_pack.name = pack_in.name
+    if pack_in.description is not None:
+        db_pack.description = pack_in.description
     if pack_in.discount_rate is not None:
         db_pack.discount_rate = pack_in.discount_rate
     if pack_in.training_ids is not None:

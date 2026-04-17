@@ -27,10 +27,10 @@ api.interceptors.response.use(
 
 export const authService = {
   login: async (username, password) => {
-    const formData = new FormData();
-    formData.append('username', username);
-    formData.append('password', password);
-    const response = await api.post('/auth/login', formData);
+    const params = new URLSearchParams();
+    params.append('username', username);
+    params.append('password', password);
+    const response = await api.post('/auth/login', params);
     if (response.data.access_token) {
       localStorage.setItem('token', response.data.access_token);
       localStorage.setItem('role', response.data.role);
@@ -64,34 +64,15 @@ export const trainingService = {
   enrollStudent: async (data) => {
     const response = await api.post('/trainings/enroll', data);
     return response.data;
+  },
+  launchTraining: async (data) => {
+    const response = await api.post('/trainings/launch', data);
+    return response.data;
   }
 };
 
 export const userService = {
-  getStudents: async () => {
-    const response = await api.get('/users/students');
-    return response.data;
-  },
-  getTrainers: async () => {
-    const response = await api.get('/users/trainers');
-    return response.data;
-  },
-  createStudent: async (data) => {
-    const response = await api.post('/users/students', data);
-    return response.data;
-  },
-  createTrainer: async (data) => {
-    const response = await api.post('/users/trainers', data);
-    return response.data;
-  },
-  updateUser: async (id, data) => {
-    const response = await api.patch(`/users/${id}`, data);
-    return response.data;
-  },
-  deleteUser: async (id) => {
-    const response = await api.delete(`/users/${id}`);
-    return response.data;
-  }
+// ... existing
 };
 
 export const reportService = {
@@ -110,10 +91,30 @@ export const reportService = {
   getTrainerPayouts: async () => {
     const response = await api.get('/reports/trainers/payouts');
     return response.data;
+  },
+  getFormationReport: async (id) => {
+    const response = await api.get(`/reports/formation/${id}`);
+    return response.data;
+  },
+  getStudentReport: async (id) => {
+    const response = await api.get(`/reports/student/${id}`);
+    return response.data;
+  },
+  getTrainerReport: async (id) => {
+    const response = await api.get(`/reports/trainer/${id}`);
+    return response.data;
+  },
+  getPackReport: async (id) => {
+    const response = await api.get(`/reports/pack/${id}`);
+    return response.data;
   }
 };
 
 export const paymentsService = {
+  listAll: async () => {
+    const response = await api.get('/payments/');
+    return response.data;
+  },
   registerStudentPayment: async (data) => {
     const response = await api.post('/payments/student', data);
     return response.data;
@@ -125,12 +126,24 @@ export const paymentsService = {
   registerTrainerPayment: async (data) => {
     const response = await api.post('/payments/trainer', data);
     return response.data;
+  },
+  getTrainerBalance: async (trainerId) => {
+    const response = await api.get(`/payments/trainer/${trainerId}`);
+    return response.data;
   }
 };
 
 export const sessionsService = {
-  getSessions: async (trainingId) => {
-    const response = await api.get(`/sessions/training/${trainingId}`);
+  getAllSessions: async () => {
+    const response = await api.get('/sessions/');
+    return response.data;
+  },
+  listRooms: async () => {
+    const response = await api.get('/sessions/rooms');
+    return response.data;
+  },
+  getSessions: async (training_id) => {
+    const response = await api.get(`/sessions/training/${training_id}`);
     return response.data;
   },
   createSession: async (data) => {
@@ -141,8 +154,8 @@ export const sessionsService = {
     const response = await api.patch(`/sessions/${id}/complete`);
     return response.data;
   },
-  getProgress: async (trainingId) => {
-    const response = await api.get(`/sessions/progress/${trainingId}`);
+  getProgress: async (training_id) => {
+    const response = await api.get(`/sessions/progress/${training_id}`);
     return response.data;
   }
 };
@@ -192,6 +205,22 @@ export const packService = {
   },
   deletePack: async (id) => {
     const response = await api.delete(`/packs/${id}`);
+    return response.data;
+  }
+};
+
+export const enrollmentService = {
+  listAll: async (filters = {}) => {
+    const params = new URLSearchParams(filters);
+    const response = await api.get(`/enrollments/?${params.toString()}`);
+    return response.data;
+  },
+  getById: async (id) => {
+    const response = await api.get(`/enrollments/${id}`);
+    return response.data;
+  },
+  updateStatus: async (id, status) => {
+    const response = await api.patch(`/enrollments/${id}/status?status=${status}`);
     return response.data;
   }
 };

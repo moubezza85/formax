@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userService } from '../services/api';
-import { Search, Plus, Edit3, Trash, Briefcase } from 'lucide-react';
+import { Search, Plus, Edit3, Trash, Briefcase, BarChart } from 'lucide-react';
 import Modal from '../components/Modal';
 import UserForm from '../components/forms/UserForm';
 
@@ -86,8 +86,14 @@ export default function TrainersPage() {
                 </div>
               </div>
               <div className="flex gap-0-5">
-                <button onClick={() => handleEdit(trainer)} className="btn-icon text-muted"><Edit3 size={16} /></button>
-                <button onClick={() => handleDelete(trainer.id)} className="btn-icon text-error"><Trash size={16} /></button>
+                <button 
+                  onClick={() => window.location.href = `/reports/trainer/${trainer.id}`} 
+                  className="btn btn-secondary flex-1 py-0-5 text-xs bg-glass"
+                >
+                  <BarChart size={14} className="mr-0-5" /> Rapport
+                </button>
+                <button onClick={() => handleEdit(trainer)} className="btn-icon text-muted bg-glass"><Edit3 size={16} /></button>
+                <button onClick={() => handleDelete(trainer.id)} className="btn-icon text-error bg-glass"><Trash size={16} /></button>
               </div>
             </div>
           </div>

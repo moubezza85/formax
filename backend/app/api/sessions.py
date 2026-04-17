@@ -3,15 +3,54 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import List
 from ..database import get_db
-from ..models.models import Session as SessionModel, UserRole, Training
+from ..models.models import Session as SessionModel, UserRole, Training, Trainer, User
 from ..schemas.schemas import SessionCreate, SessionOut
 from ..api.deps import check_role
 
 router = APIRouter()
 
+@router.get("/", response_model=List[SessionOut])
+def list_sessions(db: Session = Depends(get_db)):
+    # Global list with training and trainer info
+    sessions = db.query(SessionModel).join(Training).join(Trainer).join(User, Trainer.user_id == User.id).all()
+    
+    results = []
+    for s in sessions:
+        results.append({
+            "id": s.id,
+            "training_id": s.training_id,
+            "training_title": s.training.title,
+            "trainer_id": s.trainer_id,
+            "trainer_name": f"{s.trainer.user.first_name} {s.trainer.user.last_name}",
+            "date": s.date,
+            "duration_hours": s.duration_hours,
+            "room": s.room,
+            "status": s.status
+        })
+    return results
+
+@router.get("/rooms", response_model=List[str])
+def list_rooms(db: Session = Depends(get_db)):
+    rooms = db.query(SessionModel.room).filter(SessionModel.room != None).distinct().all()
+    return [r[0] for r in rooms if r[0]]
+
 @router.get("/training/{training_id}", response_model=List[SessionOut])
 def get_training_sessions(training_id: int, db: Session = Depends(get_db)):
-    return db.query(SessionModel).filter(SessionModel.training_id == training_id).all()
+    sessions = db.query(SessionModel).join(Training).join(Trainer).join(User, Trainer.user_id == User.id).filter(SessionModel.training_id == training_id).all()
+    results = []
+    for s in sessions:
+        results.append({
+            "id": s.id,
+            "training_id": s.training_id,
+            "training_title": s.training.title,
+            "trainer_id": s.trainer_id,
+            "trainer_name": f"{s.trainer.user.first_name} {s.trainer.user.last_name}",
+            "date": s.date,
+            "duration_hours": s.duration_hours,
+            "room": s.room,
+            "status": s.status
+        })
+    return results
 
 @router.post("/", response_model=SessionOut, dependencies=[Depends(check_role([UserRole.ADMIN, UserRole.TRAINER]))])
 def create_session(session_in: SessionCreate, db: Session = Depends(get_db)):

@@ -1,7 +1,7 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List, Any
 from datetime import datetime
-from ..models.models import UserRole
+from ..models.models import UserRole, TrainerPaymentMode, StudentPaymentType, StudentPaymentMode
 
 # User Schemas
 class UserBase(BaseModel):
@@ -35,6 +35,46 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
 
+# Trainer specific schemas
+class TrainerCreate(BaseModel):
+    specialty: Optional[str] = None
+    level: Optional[str] = None
+    default_payment_mode: TrainerPaymentMode = TrainerPaymentMode.HOURLY
+    hourly_rate: float = 0.0
+    monthly_salary: float = 0.0
+    price_per_student: float = 0.0
+    fixed_price_per_training: float = 0.0
+
+class TrainerOut(BaseModel):
+    id: int
+    user_id: int
+    user: Optional[UserOut] = None
+    specialty: Optional[str] = None
+    level: Optional[str] = None
+    default_payment_mode: TrainerPaymentMode
+    hourly_rate: float
+    monthly_salary: float
+    price_per_student: float
+    fixed_price_per_training: float
+    class Config:
+        from_attributes = True
+
+# Student specific schemas
+class StudentCreate(BaseModel):
+    parent_phone: Optional[str] = None
+    specialty: Optional[str] = None
+
+class StudentOut(BaseModel):
+    id: int
+    user_id: int
+    user: Optional[UserOut] = None
+    parent_phone: Optional[str] = None
+    specialty: Optional[str] = None
+    created_at: datetime
+    added_at: datetime
+    class Config:
+        from_attributes = True
+
 # Training Schemas
 class TrainingBase(BaseModel):
     title: str
@@ -43,6 +83,8 @@ class TrainingBase(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     total_hours: Optional[float] = None
+    masse_horaire: Optional[float] = None
+    status: str = "draft"
 
 class TrainingOut(TrainingBase):
     id: int
@@ -60,10 +102,13 @@ class TrainingUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     total_hours: Optional[float] = None
+    masse_horaire: Optional[float] = None
+    status: Optional[str] = None
 
 # Pack Schemas
 class PackBase(BaseModel):
     name: str
+    description: Optional[str] = None
     discount_rate: float = 0.0
 
 class PackCreate(PackBase):
@@ -72,12 +117,14 @@ class PackCreate(PackBase):
 class PackOut(PackBase):
     id: int
     trainings: List[TrainingOut]
+    created_at: datetime
     is_deleted: bool
     class Config:
         from_attributes = True
 
 class PackUpdate(BaseModel):
     name: Optional[str] = None
+    description: Optional[str] = None
     discount_rate: Optional[float] = None
     training_ids: Optional[List[int]] = None
 
@@ -87,35 +134,65 @@ class EnrollmentCreate(BaseModel):
     training_id: Optional[int] = None
     pack_id: Optional[int] = None
     discount_rate: float = 0.0
+    payment_mode: StudentPaymentMode = StudentPaymentMode.FULL
+    monthly_amount: Optional[float] = None
+    installment_count: Optional[int] = None
 
 class EnrollmentOut(BaseModel):
     id: int
     student_id: int
+    student: Optional[StudentOut] = None
     training_id: Optional[int] = None
+    training: Optional[TrainingOut] = None
     pack_id: Optional[int] = None
+    pack: Optional[PackOut] = None
     final_price: float
+    payment_mode: StudentPaymentMode
+    monthly_amount: Optional[float] = None
+    installment_count: Optional[int] = None
     status: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
 # Payment Schemas
 class StudentPaymentCreate(BaseModel):
     enrollment_id: int
     amount: float
-    payment_type: str # full | monthly | installment | flexible
+    payment_type: StudentPaymentType 
+    notes: Optional[str] = None
+    paid_by: Optional[str] = None
 
 class StudentPaymentOut(BaseModel):
     id: int
     enrollment_id: int
     amount: float
     date: datetime
-    payment_type: str
+    payment_type: StudentPaymentType
     remaining_balance: float
+    notes: Optional[str] = None
+    paid_by: Optional[str] = None
     class Config:
         from_attributes = True
 
 class TrainerPaymentCreate(BaseModel):
     trainer_id: int
     training_id: int
+    assignment_id: Optional[int] = None
     amount: float
     payment_type: str
+    calculation_details: Optional[Any] = None
+
+class TrainerPaymentOut(BaseModel):
+    id: int
+    trainer_id: int
+    training_id: int
+    assignment_id: Optional[int] = None
+    amount: float
+    date: datetime
+    payment_type: str
+    class Config:
+        from_attributes = True
 
 # Attendance Schemas
 class AttendanceCreate(BaseModel):
@@ -146,6 +223,19 @@ class WizardDraftOut(WizardDraftCreate):
     updated_at: datetime
     class Config:
         from_attributes = True
+
+class TrainerAssignmentOut(BaseModel):
+    id: int
+    trainer_id: int
+    trainer: Optional[TrainerOut] = None
+    training_id: int
+    payment_mode: TrainerPaymentMode
+    is_primary: bool
+    custom_rate: float
+    assigned_hours: Optional[float] = None
+    class Config:
+        from_attributes = True
+
 class SessionCreate(BaseModel):
     training_id: int
     trainer_id: int
@@ -157,7 +247,9 @@ class SessionCreate(BaseModel):
 class SessionOut(BaseModel):
     id: int
     training_id: int
+    training_title: Optional[str] = None
     trainer_id: int
+    trainer_name: Optional[str] = None
     date: datetime
     duration_hours: float
     room: Optional[str] = None

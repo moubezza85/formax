@@ -12,6 +12,13 @@ router = APIRouter()
 def list_drafts(db: Session = Depends(get_db)):
     return db.query(WizardDraft).filter(WizardDraft.is_deleted == False).order_by(WizardDraft.updated_at.desc()).all()
 
+@router.get("/{draft_id}", response_model=WizardDraftOut)
+def get_draft(draft_id: int, db: Session = Depends(get_db)):
+    db_draft = db.query(WizardDraft).filter(WizardDraft.id == draft_id).first()
+    if not db_draft:
+        raise HTTPException(status_code=404, detail="Brouillon non trouvé")
+    return db_draft
+
 @router.post("/", response_model=WizardDraftOut)
 def save_draft(draft_in: WizardDraftCreate, db: Session = Depends(get_db)):
     # Simple strategy: keep tracking multiple drafts by name

@@ -15,6 +15,15 @@ import PacksPage from './pages/PacksPage';
 import StudentDebtPage from './pages/StudentDebtPage';
 import TrainerEarningsPage from './pages/TrainerEarningsPage';
 
+import TrainingReportPage from './pages/reports/TrainingReportPage';
+import StudentReportPage from './pages/reports/StudentReportPage';
+import TrainerReportPage from './pages/reports/TrainerReportPage';
+import PackReportPage from './pages/reports/PackReportPage';
+
+import EnrollmentsPage from './pages/EnrollmentsPage';
+import RoomPlanningPage from './pages/RoomPlanningPage';
+import CertificatePage from './pages/CertificatePage';
+
 function ProtectedLayout({ children }) {
   const { user, loading } = useAuth();
   
@@ -80,6 +89,24 @@ function App() {
             </ProtectedLayout>
           } />
 
+          <Route path="/enrollments" element={
+            <ProtectedLayout>
+              <EnrollmentsPage />
+            </ProtectedLayout>
+          } />
+
+          <Route path="/planning/rooms" element={
+            <ProtectedLayout>
+              <RoomPlanningPage />
+            </ProtectedLayout>
+          } />
+
+          <Route path="/certificate/:id" element={
+            <ProtectedLayout>
+              <CertificatePage />
+            </ProtectedLayout>
+          } />
+
           <Route path="/formations/sessions/:id" element={
             <ProtectedLayout>
               <SessionDetailsPage />
@@ -101,6 +128,30 @@ function App() {
           <Route path="/reports/trainer-earnings" element={
             <ProtectedLayout>
               <TrainerEarningsPage />
+            </ProtectedLayout>
+          } />
+
+          <Route path="/reports/training/:id" element={
+            <ProtectedLayout>
+              <TrainingReportPage />
+            </ProtectedLayout>
+          } />
+
+          <Route path="/reports/student/:id" element={
+            <ProtectedLayout>
+              <StudentReportPage />
+            </ProtectedLayout>
+          } />
+
+          <Route path="/reports/trainer/:id" element={
+            <ProtectedLayout>
+              <TrainerReportPage />
+            </ProtectedLayout>
+          } />
+
+          <Route path="/reports/pack/:id" element={
+            <ProtectedLayout>
+              <PackReportPage />
             </ProtectedLayout>
           } />
           

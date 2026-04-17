@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, trainings, reports, users, sessions, payments, attendance, drafts, packs
+from app.api import auth, trainings, reports, users, sessions, payments, attendance, drafts, packs, enrollments
 from app.database import engine, Base
 from app.models import models # Ensure models are registered for Base
 
@@ -28,6 +28,7 @@ app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
 app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
 app.include_router(drafts.router, prefix="/api/drafts", tags=["Wizard Drafts"])
 app.include_router(packs.router, prefix="/api/packs", tags=["Packs"])
+app.include_router(enrollments.router, prefix="/api/enrollments", tags=["Enrollments"])
 
 @app.get("/")
 def root():

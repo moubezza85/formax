@@ -18,16 +18,14 @@ export default function AdminDashboard() {
         const prof = await reportService.getProfit();
         const students = await userService.getStudents();
         const trainings = await trainingService.getTrainings();
+        const debts = await reportService.getStudentDebt();
         
-        // Mocking debtor detection logic for demonstration
-        const debtors = students.slice(0, 3).map(s => ({ ...s, balance: 1200 }));
-
         setDashboardData({
-          revenue: rev.total_revenue,
-          profit: prof.net_profit,
+          revenue: rev.total_revenue || 0,
+          profit: prof.net_profit || 0,
           studentCount: students.length,
           trainingCount: trainings.length,
-          debtors: debtors
+          debtors: debts.slice(0, 5) // Show top 5 debtors
         });
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
@@ -75,8 +73,8 @@ export default function AdminDashboard() {
                 <div className="flex items-center gap-1">
                   <div className="text-error"><AlertTriangle size={18} /></div>
                   <div>
-                    <div className="font-bold">{debtor.first_name} {debtor.last_name}</div>
-                    <div className="text-xs text-muted">Solde restant : {debtor.balance} MAD</div>
+                    <div className="font-bold">{debtor.student_name}</div>
+                    <div className="text-xs text-muted">Solde restant : {debtor.remaining_balance.toLocaleString()} MAD</div>
                   </div>
                 </div>
                 <button className="btn btn-icon text-muted"><ArrowRight size={18} /></button>

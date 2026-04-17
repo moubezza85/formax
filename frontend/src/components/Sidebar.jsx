@@ -12,7 +12,9 @@ import {
   Activity,
   Package,
   AlertCircle,
-  Wallet
+  Wallet,
+  Tag,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -27,6 +29,8 @@ export default function Sidebar() {
     { path: '/formations/packs', name: 'Packs Promo', icon: Package },
     { path: '/formations/launch', name: 'Lancer Formation', icon: PlayCircle },
     { path: '/formations/active', name: 'Formations Lancées', icon: Activity },
+    { path: '/enrollments', name: 'Inscriptions', icon: Tag },
+    { path: '/planning/rooms', name: 'Planning Salles', icon: Calendar },
     { path: '/reports/student-debt', name: 'Dettes Étudiants', icon: AlertCircle },
     { path: '/reports/trainer-earnings', name: 'Gains Formateurs', icon: Wallet },
     { path: '/payments', name: 'Paiements', icon: CreditCard },

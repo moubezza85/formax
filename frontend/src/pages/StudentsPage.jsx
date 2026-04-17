@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { userService } from '../services/api';
-import { Search, UserPlus, Filter, Edit2, Trash2, Printer } from 'lucide-react';
+import { Search, UserPlus, Filter, Edit2, Trash2, Printer, BarChart } from 'lucide-react';
 import Modal from '../components/Modal';
 import UserForm from '../components/forms/UserForm';
 
@@ -97,7 +97,14 @@ export default function StudentsPage() {
                 <td className="p-1">{student.phone || 'N/A'}</td>
                 <td className="p-1 text-sm">{new Date(student.created_at).toLocaleDateString()}</td>
                 <td className="p-1">
-                  <div className="flex justify-center gap-0-5">
+                   <div className="flex justify-center gap-0-5">
+                    <button 
+                      onClick={() => window.location.href = `/reports/student/${student.id}`} 
+                      className="btn-icon text-secondary"
+                      title="Rapport Financier"
+                    >
+                      <BarChart size={16} />
+                    </button>
                     <button onClick={() => handleEdit(student)} className="btn-icon text-primary"><Edit2 size={16} /></button>
                     <button className="btn-icon text-success"><Printer size={16} /></button>
                     <button onClick={() => handleDelete(student.id)} className="btn-icon text-error"><Trash2 size={16} /></button>
