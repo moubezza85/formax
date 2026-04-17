@@ -14,6 +14,8 @@
   --radius: 8px;
   --primary-light: #e7f3ff;
   --error-light: #fff0f0;
+  --warning-light: #fff9e6;
+  --success-light: #e6f9ee;
 }
 
 * {
@@ -64,6 +66,8 @@ body {
 
 .btn-primary  { background: var(--primary); color: white; }
 .btn-primary:hover { background: var(--primary-hover); }
+.btn-secondary { background: #e4e6eb; color: var(--text); }
+.btn-secondary:hover { background: #d8dadf; }
 .btn-success  { background: var(--success); color: white; }
 .btn-error    { background: var(--error); color: white; }
 
@@ -96,7 +100,7 @@ body {
   box-shadow: 0 0 0 2px rgba(24, 119, 242, 0.2);
 }
 
-/* ── Tags ──────────────────────────────────────── */
+/* ── Tags / Badges ─────────────────────────────── */
 .tag {
   padding: 0.3rem 0.8rem;
   border-radius: 4px;
@@ -106,6 +110,20 @@ body {
 }
 .tag-success { background: #e7f3ff; color: var(--primary); }
 .tag-warning  { background: #fff9e6; color: #d4a017; }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+.badge-primary   { background: var(--primary-light); color: var(--primary); }
+.badge-secondary { background: #e4e6eb; color: var(--text-muted); }
+.badge-success   { background: var(--success-light); color: #1a7a2e; }
+.badge-warning   { background: var(--warning-light); color: #a07000; }
+.badge-error     { background: var(--error-light); color: var(--error); }
 
 /* ── Logo ──────────────────────────────────────── */
 .logo {
@@ -183,6 +201,7 @@ body {
 .p-1    { padding: 1rem; }
 .p-1-5  { padding: 1.5rem; }
 .p-2    { padding: 2rem; }
+.p-3    { padding: 3rem; }
 .pt-0-5 { padding-top: 0.5rem; }
 .pt-1   { padding-top: 1rem; }
 .pb-0-5 { padding-bottom: 0.5rem; }
@@ -202,6 +221,8 @@ body {
 .mb-0-5 { margin-bottom: 0.5rem; }
 .mb-1   { margin-bottom: 1rem; }
 .mb-2   { margin-bottom: 2rem; }
+.mr-0-5 { margin-right: 0.5rem; }
+.ml-1   { margin-left: 1rem; }
 
 /* ── Sizing ─────────────────────────────────────── */
 .w-full  { width: 100%; }
@@ -213,28 +234,45 @@ body {
 /* ── Typography ─────────────────────────────────── */
 .font-bold   { font-weight: 700; }
 .font-medium { font-weight: 500; }
+.font-normal { font-weight: 400; }
+.leading-relaxed { line-height: 1.6; }
 .text-xs   { font-size: 0.75rem; }
 .text-sm   { font-size: 0.875rem; }
 .text-base { font-size: 1rem; }
 .text-lg   { font-size: 1.125rem; }
 .text-xl   { font-size: 1.25rem; }
 .text-2xl  { font-size: 1.5rem; }
+.text-3xl  { font-size: 1.875rem; }
 .uppercase { text-transform: uppercase; }
 .block     { display: block; }
 .text-center { text-align: center; }
+.text-right  { text-align: right; }
+.text-left   { text-align: left; }
 
-/* ── Colors ─────────────────────────────────────── */
-.text-success  { color: var(--success); }
-.text-primary  { color: var(--primary); }
+/* ── Text colors ─────────────────────────────────── */
+.text-success   { color: var(--success); }
+.text-primary   { color: var(--primary); }
 .text-secondary { color: #65676b; }
-.text-warning  { color: #f7b924; }
-.text-muted    { color: #65676b; }
-.text-error    { color: var(--error); }
-.text-white    { color: white; }
+.text-warning   { color: #a07000; }
+.text-muted     { color: #65676b; }
+.text-error     { color: var(--error); }
+.text-white     { color: white; }
 
-.bg-surface    { background: var(--surface); }
-.bg-glass      { background: #f0f2f5; }
-.bg-primary-light { background: var(--primary-light); }
+/* ── Background colors ───────────────────────────── */
+.bg-surface        { background: var(--surface); }
+.bg-glass          { background: #f0f2f5; }
+.bg-primary-light  { background: var(--primary-light); }
+.bg-white          { background: #ffffff; }
+
+/* Solid colored backgrounds (cards KPI) */
+.bg-primary  { background: var(--primary) !important; }
+.bg-success  { background: var(--success) !important; }
+.bg-warning  { background: #e89c00 !important; }  /* assombri pour lisibilité */
+.bg-error    { background: var(--error) !important; }
+.bg-secondary { background: #4a5568 !important; }  /* gris ardoise élégant */
+.bg-dark      { background: #1c1e21 !important; }
+.bg-indigo    { background: #4f46e5 !important; }
+.bg-teal      { background: #0d9488 !important; }
 
 /* ── Borders ─────────────────────────────────────── */
 .border      { border: 1px solid var(--surface-border); }
@@ -244,7 +282,9 @@ body {
 .border-dashed { border-style: dashed; }
 .border-primary { border-color: var(--primary); }
 .border-success { border-color: var(--success); }
+.border-warning { border-color: #e89c00; }
 .border-primary-light { border-color: var(--primary-light); }
+.border-surface-border { border-color: var(--surface-border); }
 .border-l-4  { border-left: 4px solid; }
 
 .rounded     { border-radius: 6px; }
@@ -257,6 +297,7 @@ body {
 .cursor-pointer { cursor: pointer; }
 .transition-all { transition: all 0.2s ease; }
 .opacity-50     { opacity: 0.5; }
+.opacity-80     { opacity: 0.8; }
 .overflow-hidden { overflow: hidden; }
 .sticky  { position: sticky; }
 .top-0   { top: 0; }
@@ -264,6 +305,9 @@ body {
 
 /* ── Hover helpers ─────────────────────────────── */
 .hover-opacity:hover { opacity: 1; }
+.hover\:bg-glass:hover { background: #f0f2f5; }
+.hover\:border-primary:hover { border-color: var(--primary); }
+.last\:border-0:last-child { border: none; }
 
 /* ── Sidebar Layout ─────────────────────────────── */
 .app-layout {
@@ -424,3 +468,20 @@ body {
 /* ── bg with opacity (wizard header) ────────────── */
 .bg-white-20 { background: rgba(255,255,255,0.2); }
 .bg-white-30 { background: rgba(255,255,255,0.3); }
+
+/* ── KPI card colored variants ───────────────────── */
+/* Usage: <div class="card kpi-card kpi-primary"> */
+.kpi-card {
+  border: none !important;
+  color: white !important;
+  padding: 1.5rem;
+}
+.kpi-card h3, .kpi-card p, .kpi-card div { color: white !important; }
+.kpi-primary  { background: linear-gradient(135deg, #1877f2, #1255b5) !important; }
+.kpi-success  { background: linear-gradient(135deg, #2e9e4f, #1a7a2e) !important; }
+.kpi-warning  { background: linear-gradient(135deg, #e89c00, #b57800) !important; }
+.kpi-error    { background: linear-gradient(135deg, #e41e1e, #b01515) !important; }
+.kpi-indigo   { background: linear-gradient(135deg, #4f46e5, #3730a3) !important; }
+.kpi-teal     { background: linear-gradient(135deg, #0d9488, #0a7c72) !important; }
+.kpi-slate    { background: linear-gradient(135deg, #4a5568, #2d3748) !important; }
+.kpi-dark     { background: linear-gradient(135deg, #2d3748, #1a202c) !important; }
