@@ -1,35 +1,37 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, trainings, reports, users, sessions, payments, attendance, drafts, packs, enrollments
+from app.api import auth, trainings, reports, users, sessions, payments, attendance, drafts, packs, enrollments, wizard
 from app.database import engine, Base
-from app.models import models # Ensure models are registered for Base
+from app.models import models
 
-# Create tables (For dev, Alembic is better for prod)
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Formax ERP API")
+app = FastAPI(
+    title="Formax ERP API",
+    description="Gestion des formations, inscriptions et paiements",
+    version="2.0.0"
+)
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In development
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers
-app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(trainings.router, prefix="/api/trainings", tags=["Trainings"])
-app.include_router(reports.router, prefix="/api/reports", tags=["Reporting"])
-app.include_router(users.router, prefix="/api/users", tags=["Users"])
-app.include_router(sessions.router, prefix="/api/sessions", tags=["Sessions"])
-app.include_router(payments.router, prefix="/api/payments", tags=["Payments"])
-app.include_router(attendance.router, prefix="/api/attendance", tags=["Attendance"])
-app.include_router(drafts.router, prefix="/api/drafts", tags=["Wizard Drafts"])
-app.include_router(packs.router, prefix="/api/packs", tags=["Packs"])
-app.include_router(enrollments.router, prefix="/api/enrollments", tags=["Enrollments"])
+app.include_router(auth.router,        prefix="/api/auth",        tags=["Authentification"])
+app.include_router(users.router,       prefix="/api/users",       tags=["Utilisateurs"])
+app.include_router(trainings.router,   prefix="/api/trainings",   tags=["Formations"])
+app.include_router(packs.router,       prefix="/api/packs",       tags=["Packs"])
+app.include_router(enrollments.router, prefix="/api/enrollments", tags=["Inscriptions"])
+app.include_router(sessions.router,    prefix="/api/sessions",    tags=["Seances"])
+app.include_router(payments.router,    prefix="/api/payments",    tags=["Paiements"])
+app.include_router(attendance.router,  prefix="/api/attendance",  tags=["Presences"])
+app.include_router(wizard.router,      prefix="/api/wizard",      tags=["Wizard Lancement"])
+app.include_router(reports.router,     prefix="/api/reports",     tags=["Rapports"])
+app.include_router(drafts.router,      prefix="/api/drafts",      tags=["Brouillons"])
 
 @app.get("/")
 def root():
-    return {"message": "Welcome to Formax ERP API", "currency": "MAD"}
+    return {"message": "Formax ERP API v2.0", "currency": "MAD", "docs": "/docs"}

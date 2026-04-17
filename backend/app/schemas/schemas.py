@@ -35,7 +35,7 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
 
-# Trainer specific schemas
+# Trainer Schemas
 class TrainerCreate(BaseModel):
     specialty: Optional[str] = None
     level: Optional[str] = None
@@ -59,7 +59,7 @@ class TrainerOut(BaseModel):
     class Config:
         from_attributes = True
 
-# Student specific schemas
+# Student Schemas
 class StudentCreate(BaseModel):
     parent_phone: Optional[str] = None
     specialty: Optional[str] = None
@@ -86,12 +86,6 @@ class TrainingBase(BaseModel):
     masse_horaire: Optional[float] = None
     status: str = "draft"
 
-class TrainingOut(TrainingBase):
-    id: int
-    is_deleted: bool
-    class Config:
-        from_attributes = True
-
 class TrainingCreate(TrainingBase):
     pass
 
@@ -104,6 +98,12 @@ class TrainingUpdate(BaseModel):
     total_hours: Optional[float] = None
     masse_horaire: Optional[float] = None
     status: Optional[str] = None
+
+class TrainingOut(TrainingBase):
+    id: int
+    is_deleted: bool
+    class Config:
+        from_attributes = True
 
 # Pack Schemas
 class PackBase(BaseModel):
@@ -137,6 +137,7 @@ class EnrollmentCreate(BaseModel):
     payment_mode: StudentPaymentMode = StudentPaymentMode.FULL
     monthly_amount: Optional[float] = None
     installment_count: Optional[int] = None
+    installment_amount: Optional[float] = None
 
 class EnrollmentOut(BaseModel):
     id: int
@@ -159,7 +160,7 @@ class EnrollmentOut(BaseModel):
 class StudentPaymentCreate(BaseModel):
     enrollment_id: int
     amount: float
-    payment_type: StudentPaymentType 
+    payment_type: StudentPaymentType
     notes: Optional[str] = None
     paid_by: Optional[str] = None
 
@@ -218,12 +219,69 @@ class WizardDraftCreate(BaseModel):
     current_step: int
     data_json: Any
 
-class WizardDraftOut(WizardDraftCreate):
+class WizardDraftUpdate(BaseModel):
+    name: Optional[str] = None
+    current_step: Optional[int] = None
+    data_json: Optional[Any] = None
+
+class WizardDraftOut(BaseModel):
     id: int
+    name: str
+    current_step: int
+    data_json: Any
     updated_at: datetime
     class Config:
         from_attributes = True
 
+# ── Wizard Launch Schemas ────────────────────────────────────────────────────
+
+class NewTrainerData(BaseModel):
+    email: EmailStr
+    password: Optional[str] = "changeme"
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    specialty: Optional[str] = None
+    level: Optional[str] = None
+    default_payment_mode: TrainerPaymentMode = TrainerPaymentMode.HOURLY
+    hourly_rate: float = 0.0
+    monthly_salary: float = 0.0
+    price_per_student: float = 0.0
+    fixed_price: float = 0.0
+
+class WizardTrainerEntry(BaseModel):
+    trainer_id: Optional[int] = None
+    trainer_data: Optional[NewTrainerData] = None
+    is_primary: bool = False
+    payment_mode: TrainerPaymentMode = TrainerPaymentMode.HOURLY
+    custom_rate: Optional[float] = None
+    assigned_hours: Optional[float] = None
+
+class NewStudentData(BaseModel):
+    email: EmailStr
+    password: Optional[str] = "changeme"
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    parent_phone: Optional[str] = None
+    specialty: Optional[str] = None
+
+class WizardStudentEntry(BaseModel):
+    student_id: Optional[int] = None
+    student_data: Optional[NewStudentData] = None
+    discount_rate: float = 0.0
+    payment_mode: StudentPaymentMode = StudentPaymentMode.FULL
+    monthly_amount: Optional[float] = None
+    installment_count: Optional[int] = None
+    installment_amount: Optional[float] = None
+
+class WizardLaunchPayload(BaseModel):
+    training_id: Optional[int] = None
+    training_data: Optional[TrainingCreate] = None
+    trainers: List[WizardTrainerEntry] = []
+    students: List[WizardStudentEntry] = []
+
+# Trainer Assignment
 class TrainerAssignmentOut(BaseModel):
     id: int
     trainer_id: int
@@ -231,7 +289,7 @@ class TrainerAssignmentOut(BaseModel):
     training_id: int
     payment_mode: TrainerPaymentMode
     is_primary: bool
-    custom_rate: float
+    custom_rate: Optional[float] = None
     assigned_hours: Optional[float] = None
     class Config:
         from_attributes = True
