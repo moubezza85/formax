@@ -10,10 +10,7 @@ router = APIRouter()
 
 @router.get("/revenue", dependencies=[Depends(check_role([UserRole.ADMIN]))])
 def get_revenue_report(db: Session = Depends(get_db)):
-    # Total revenue from enrollments
     total_revenue = db.query(func.sum(Enrollment.final_price)).scalar() or 0.0
-    
-    # Revenue per training
     revenue_per_training = db.query(
         Training.title,
         func.sum(Enrollment.final_price).label("revenue")
@@ -27,15 +24,11 @@ def get_revenue_report(db: Session = Depends(get_db)):
 
 @router.get("/dashboard", dependencies=[Depends(check_role([UserRole.ADMIN]))])
 def get_dashboard_kpis(db: Session = Depends(get_db)):
-    # 1. CA & Profit
     total_revenue = db.query(func.sum(Enrollment.final_price)).scalar() or 0.0
     total_expenses = db.query(func.sum(TrainerPayment.amount)).scalar() or 0.0
-    
-    # 2. Counts
     student_count = db.query(Student).filter(Student.is_deleted == False).count()
     active_trainings = db.query(Training).filter(Training.status == "active", Training.is_deleted == False).count()
     
-    # 3. Debtors (Top 5)
     all_enrollments = db.query(Enrollment).filter(Enrollment.is_deleted == False).all()
     debtors = []
     for e in all_enrollments:
@@ -62,7 +55,6 @@ def get_dashboard_kpis(db: Session = Depends(get_db)):
 def get_profit_report(db: Session = Depends(get_db)):
     total_revenue = db.query(func.sum(Enrollment.final_price)).scalar() or 0.0
     total_trainer_payments = db.query(func.sum(TrainerPayment.amount)).scalar() or 0.0
-    
     return {
         "total_revenue": total_revenue,
         "total_expenses": total_trainer_payments,
@@ -71,8 +63,6 @@ def get_profit_report(db: Session = Depends(get_db)):
 
 @router.get("/students/debt", dependencies=[Depends(check_role([UserRole.ADMIN]))])
 def get_students_debt(db: Session = Depends(get_db)):
-    # Students with remaining balance > 0
-    # We join with User to get names
     active_debts = db.query(
         User.first_name,
         User.last_name,
@@ -84,19 +74,14 @@ def get_students_debt(db: Session = Depends(get_db)):
     
     results = []
     for d in active_debts:
-        # Calculate balance
         total_paid = db.query(func.sum(StudentPayment.amount)).filter(
             StudentPayment.enrollment_id == d.enrollment_id
         ).scalar() or 0.0
-        
         balance = d.final_price - total_paid
-        
         if balance > 0:
-            # Get last transaction date
             last_payment = db.query(StudentPayment.date).filter(
                 StudentPayment.enrollment_id == d.enrollment_id
             ).order_by(StudentPayment.date.desc()).first()
-            
             results.append({
                 "student_name": f"{d.first_name} {d.last_name}",
                 "total_price": d.final_price,
@@ -104,30 +89,22 @@ def get_students_debt(db: Session = Depends(get_db)):
                 "remaining_balance": balance,
                 "last_transaction": last_payment[0] if last_payment else None
             })
-            
     return results
 
 @router.get("/trainers/payouts", dependencies=[Depends(check_role([UserRole.ADMIN]))])
 def get_trainers_payouts(db: Session = Depends(get_db)):
-    # For each trainer, calculate total expected vs total paid
     trainers = db.query(Trainer).join(User).filter(User.is_deleted == False).all()
     results = []
-    
     for t in trainers:
         user = db.query(User).filter(User.id == t.user_id).first()
-        
-        # 1. Total expected (sum from all their assignments)
         assignments = db.query(TrainerAssignment).filter(TrainerAssignment.trainer_id == t.id).all()
         total_expected = 0.0
         for a in assignments:
             payment_info = PaymentService.calculate_trainer_expected_payment(db, t.id, a.training_id)
             total_expected += payment_info["amount"]
-            
-        # 2. Total already paid
         total_paid = db.query(func.sum(TrainerPayment.amount)).filter(
             TrainerPayment.trainer_id == t.id
         ).scalar() or 0.0
-        
         if total_expected > 0 or total_paid > 0:
             results.append({
                 "id": t.id,
@@ -136,7 +113,6 @@ def get_trainers_payouts(db: Session = Depends(get_db)):
                 "total_paid": total_paid,
                 "remaining_payout": total_expected - total_paid
             })
-            
     return results
 
 @router.get("/formation/{training_id}", dependencies=[Depends(check_role([UserRole.ADMIN]))])
@@ -164,8 +140,36 @@ def get_training_detail_report(training_id: int, db: Session = Depends(get_db)):
             "mode": a.payment_mode
         })
     
+    enrollment_details = []
+    for e in enrollments:
+        u = e.student.user
+        total_paid_enrollment = db.query(func.sum(StudentPayment.amount)).filter(
+            StudentPayment.enrollment_id == e.id
+        ).scalar() or 0.0
+        enrollment_details.append({
+            "id": e.id,
+            "student_id": e.student_id,
+            "student_name": f"{u.first_name} {u.last_name}",
+            "final_price": e.final_price,
+            "total_paid": total_paid_enrollment,
+            "balance": (e.final_price or 0) - total_paid_enrollment,
+            "payment_mode": e.payment_mode,
+            "discount_rate": e.discount_rate,
+            "status": e.status,
+        })
+    
     return {
-        "training": training,
+        "training": {
+            "id": training.id,
+            "title": training.title,
+            "description": training.description,
+            "price": training.price,
+            "start_date": training.start_date,
+            "end_date": training.end_date,
+            "total_hours": training.total_hours,
+            "masse_horaire": training.masse_horaire,
+            "status": training.status,
+        },
         "summary": {
             "total_enrollments": len(enrollments),
             "total_revenue": total_revenue,
@@ -175,7 +179,7 @@ def get_training_detail_report(training_id: int, db: Session = Depends(get_db)):
             "net_margin": total_revenue - trainer_costs
         },
         "trainers": trainer_details,
-        "enrollments": enrollments
+        "enrollments": enrollment_details
     }
 
 @router.get("/student/{student_id}", dependencies=[Depends(check_role([UserRole.ADMIN]))])
@@ -183,24 +187,72 @@ def get_student_detail_report(student_id: int, db: Session = Depends(get_db)):
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
         return {"error": "Étudiant non trouvé"}
-    
-    enrollments = db.query(Enrollment).filter(Enrollment.student_id == student_id).all()
+
+    user = student.user
+    enrollments = db.query(Enrollment).filter(
+        Enrollment.student_id == student_id,
+        Enrollment.is_deleted == False
+    ).all()
     payments = db.query(StudentPayment)\
         .join(Enrollment, Enrollment.id == StudentPayment.enrollment_id)\
-        .filter(Enrollment.student_id == student_id).order_by(StudentPayment.date.desc()).all()
+        .filter(Enrollment.student_id == student_id)\
+        .order_by(StudentPayment.date.desc()).all()
     
-    total_invoiced = sum(e.final_price for e in enrollments)
-    total_paid = sum(p.amount for p in payments)
-    
+    total_invoiced = sum(e.final_price or 0 for e in enrollments)
+    total_paid_sum = sum(p.amount or 0 for p in payments)
+
+    enrollment_list = []
+    for e in enrollments:
+        training_title = e.training.title if e.training else None
+        pack_name = e.pack.name if e.pack else None
+        label = training_title or pack_name or f"Inscription #{e.id}"
+        enrollment_list.append({
+            "id": e.id,
+            "training_id": e.training_id,
+            "pack_id": e.pack_id,
+            "training_title": training_title,
+            "pack_name": pack_name,
+            "label": label,
+            "final_price": e.final_price,
+            "discount_rate": e.discount_rate,
+            "payment_mode": e.payment_mode,
+            "monthly_amount": e.monthly_amount,
+            "installment_count": e.installment_count,
+            "status": e.status,
+            "created_at": e.created_at,
+        })
+
+    payment_list = []
+    for p in payments:
+        payment_list.append({
+            "id": p.id,
+            "enrollment_id": p.enrollment_id,
+            "amount": p.amount,
+            "date": p.date,
+            "payment_type": p.payment_type,
+            "remaining_balance": p.remaining_balance,
+            "notes": p.notes,
+            "paid_by": p.paid_by,
+        })
+
     return {
-        "student": student,
+        "student": {
+            "id": student.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "phone": user.phone,
+            "parent_phone": student.parent_phone,
+            "specialty": student.specialty,
+            "added_at": student.added_at or student.created_at,
+        },
         "summary": {
             "total_invoiced": total_invoiced,
-            "total_paid": total_paid,
-            "balance": total_invoiced - total_paid
+            "total_paid": total_paid_sum,
+            "balance": total_invoiced - total_paid_sum
         },
-        "enrollments": enrollments,
-        "payments": payments
+        "enrollments": enrollment_list,
+        "payments": payment_list
     }
 
 @router.get("/trainer/{trainer_id}", dependencies=[Depends(check_role([UserRole.ADMIN]))])
@@ -209,6 +261,7 @@ def get_trainer_detail_report(trainer_id: int, db: Session = Depends(get_db)):
     if not trainer:
         return {"error": "Formateur non trouvé"}
     
+    user = trainer.user
     assignments = db.query(TrainerAssignment).filter(TrainerAssignment.trainer_id == trainer_id).all()
     payments = db.query(TrainerPayment).filter(TrainerPayment.trainer_id == trainer_id).all()
     
@@ -227,14 +280,33 @@ def get_trainer_detail_report(trainer_id: int, db: Session = Depends(get_db)):
     total_paid = sum(p.amount for p in payments)
     
     return {
-        "trainer": trainer,
+        "trainer": {
+            "id": trainer.id,
+            "first_name": user.first_name,
+            "last_name": user.last_name,
+            "email": user.email,
+            "phone": user.phone,
+            "specialty": trainer.specialty,
+            "level": trainer.level,
+            "default_payment_mode": trainer.default_payment_mode,
+            "hourly_rate": trainer.hourly_rate,
+            "monthly_salary": trainer.monthly_salary,
+            "price_per_student": trainer.price_per_student,
+            "fixed_price_per_training": trainer.fixed_price_per_training,
+        },
         "summary": {
             "total_earned": total_earned,
             "total_paid": total_paid,
             "balance": total_earned - total_paid
         },
         "activities": activities,
-        "payments": payments
+        "payments": [{
+            "id": p.id,
+            "amount": p.amount,
+            "date": p.date,
+            "payment_type": p.payment_type,
+            "calculation_details": p.calculation_details,
+        } for p in payments]
     }
 
 @router.get("/pack/{pack_id}", dependencies=[Depends(check_role([UserRole.ADMIN]))])
@@ -246,12 +318,39 @@ def get_pack_detail_report(pack_id: int, db: Session = Depends(get_db)):
     enrollments = db.query(Enrollment).filter(Enrollment.pack_id == pack_id).all()
     total_revenue = sum(e.final_price for e in enrollments)
     
+    enrollment_details = []
+    for e in enrollments:
+        u = e.student.user
+        total_paid_e = db.query(func.sum(StudentPayment.amount)).filter(
+            StudentPayment.enrollment_id == e.id
+        ).scalar() or 0.0
+        enrollment_details.append({
+            "id": e.id,
+            "student_id": e.student_id,
+            "student_name": f"{u.first_name} {u.last_name}",
+            "final_price": e.final_price,
+            "total_paid": total_paid_e,
+            "balance": (e.final_price or 0) - total_paid_e,
+            "status": e.status,
+        })
+    
     return {
-        "pack": pack,
+        "pack": {
+            "id": pack.id,
+            "name": pack.name,
+            "description": pack.description,
+            "discount_rate": pack.discount_rate,
+            "created_at": pack.created_at,
+        },
         "summary": {
             "enrollment_count": len(enrollments),
             "total_revenue": total_revenue
         },
-        "trainings": pack.trainings,
-        "enrollments": enrollments
+        "trainings": [{
+            "id": t.id,
+            "title": t.title,
+            "price": t.price,
+            "status": t.status,
+        } for t in pack.trainings],
+        "enrollments": enrollment_details
     }
