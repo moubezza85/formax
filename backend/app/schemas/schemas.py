@@ -35,6 +35,37 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     email: Optional[str] = None
 
+# ── Schémas unifiés création (User + Profil) ─────────────────────────────────
+
+class StudentFullCreate(BaseModel):
+    """Schéma unifié : crée le User ET le profil Student en une seule requête."""
+    # Champs User
+    email: EmailStr
+    password: str = "changeme"
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    # Champs Student
+    parent_phone: Optional[str] = None
+    specialty: Optional[str] = None
+
+class TrainerFullCreate(BaseModel):
+    """Schéma unifié : crée le User ET le profil Trainer en une seule requête."""
+    # Champs User
+    email: EmailStr
+    password: str = "changeme"
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    # Champs Trainer
+    specialty: Optional[str] = None
+    level: Optional[str] = None
+    default_payment_mode: TrainerPaymentMode = TrainerPaymentMode.HOURLY
+    hourly_rate: float = 0.0
+    monthly_salary: float = 0.0
+    price_per_student: float = 0.0
+    fixed_price_per_training: float = 0.0
+
 # Trainer Schemas
 class TrainerCreate(BaseModel):
     specialty: Optional[str] = None

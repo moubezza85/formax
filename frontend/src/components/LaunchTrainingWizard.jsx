@@ -3,7 +3,7 @@ import { trainingService, userService, draftsService } from '../services/api';
 import {
   CheckCircle, Users, BookOpen, CreditCard,
   ChevronRight, ChevronLeft, Save, GraduationCap,
-  Plus, Trash2, Info
+  Plus, Trash2, Info, Phone
 } from 'lucide-react';
 
 const steps = [
@@ -13,6 +13,13 @@ const steps = [
   { id: 4, title: 'Paiements Étudiants', icon: CreditCard },
   { id: 5, title: 'Récapitulatif',   icon: CheckCircle },
 ];
+
+const PAYMENT_MODE_LABELS = {
+  hourly: 'Par heure',
+  per_student: 'Par étudiant',
+  fixed: 'Forfait fixe',
+  monthly: 'Mensuel',
+};
 
 export default function LaunchTrainingWizard({ initialData, initialStep, draftName }) {
   const [currentStep, setCurrentStep] = useState(initialStep || 1);
@@ -28,12 +35,21 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
     students: []
   });
 
+  // État complet nouveau formateur
   const [newTrainer, setNewTrainer] = useState({
-    first_name: '', last_name: '', email: '',
-    payment_mode: 'hourly', rate: 0, is_primary: false
+    first_name: '', last_name: '', email: '', phone: '',
+    specialty: '', level: '',
+    payment_mode: 'hourly',
+    hourly_rate: 0, monthly_salary: 0,
+    price_per_student: 0, fixed_price_per_training: 0,
+    is_primary: false
   });
+
+  // État complet nouvel étudiant
   const [newStudent, setNewStudent] = useState({
-    first_name: '', last_name: '', email: '', discount: 0
+    first_name: '', last_name: '', email: '',
+    phone: '', parent_phone: '', specialty: '',
+    discount: 0
   });
 
   useEffect(() => {
@@ -42,7 +58,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
     userService.getTrainers().then(setAllTrainers);
   }, []);
 
-  /* ── Sauvegarde brouillon ───────────────────── */
+  /* ── Sauvegarde brouillon ───────────────────────────────────────────────── */
   const handleSaveDraft = async (manualName = null) => {
     const name = manualName || draftName || prompt('Nom de ce brouillon :');
     if (!name) return;
@@ -57,7 +73,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
     }
   };
 
-  /* ── Lancement ──────────────────────────────── */
+  /* ── Lancement ──────────────────────────────────────────────────────────── */
   const handleLaunch = async () => {
     setIsLaunching(true);
     try {
@@ -74,61 +90,108 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
   const nextStep = () => setCurrentStep(p => Math.min(p + 1, steps.length));
   const prevStep = () => setCurrentStep(p => Math.max(p - 1, 1));
 
-  /* ── Formateurs ─────────────────────────────── */
+  /* ── Helpers taux par mode ──────────────────────────────────────────────── */
+  const getRateForMode = (trainer, mode) => {
+    switch (mode) {
+      case 'hourly':      return trainer.hourly_rate || 0;
+      case 'per_student': return trainer.price_per_student || 0;
+      case 'fixed':       return trainer.fixed_price_per_training || 0;
+      case 'monthly':     return trainer.monthly_salary || 0;
+      default:            return 0;
+    }
+  };
+
+  /* ── Formateurs ─────────────────────────────────────────────────────────── */
   const addExistingTrainer = (t) => {
     if (formData.trainers.find(tr => tr.id === t.id)) return;
     const u = t.user || {};
+    const mode = t.default_payment_mode || 'hourly';
     setFormData({ ...formData, trainers: [...formData.trainers, {
-      id: t.id, first_name: u.first_name, last_name: u.last_name, email: u.email,
-      payment_mode: t.default_payment_mode || 'hourly',
-      rate: t.hourly_rate || 0,
+      id: t.id,
+      first_name: u.first_name, last_name: u.last_name, email: u.email,
+      specialty: t.specialty, level: t.level,
+      payment_mode: mode,
+      rate: getRateForMode(t, mode),
+      hourly_rate: t.hourly_rate || 0,
+      price_per_student: t.price_per_student || 0,
+      fixed_price_per_training: t.fixed_price_per_training || 0,
+      monthly_salary: t.monthly_salary || 0,
       is_primary: formData.trainers.length === 0
     }]});
   };
+
   const addNewTrainer = () => {
     if (!newTrainer.first_name || !newTrainer.email) return;
-    setFormData({ ...formData, trainers: [...formData.trainers,
-      { ...newTrainer, id: null, is_primary: formData.trainers.length === 0 }
-    ]});
-    setNewTrainer({ first_name: '', last_name: '', email: '', payment_mode: 'hourly', rate: 0, is_primary: false });
+    setFormData({ ...formData, trainers: [...formData.trainers, {
+      ...newTrainer,
+      id: null,
+      rate: getRateForMode(newTrainer, newTrainer.payment_mode),
+      is_primary: formData.trainers.length === 0
+    }]});
+    setNewTrainer({
+      first_name: '', last_name: '', email: '', phone: '',
+      specialty: '', level: '',
+      payment_mode: 'hourly',
+      hourly_rate: 0, monthly_salary: 0,
+      price_per_student: 0, fixed_price_per_training: 0,
+      is_primary: false
+    });
   };
+
   const updateTrainer = (i, field, val) => {
-    const t = [...formData.trainers]; t[i][field] = val;
+    const t = [...formData.trainers];
+    t[i][field] = val;
+    // Mettre à jour le taux affiché si on change le mode
+    if (field === 'payment_mode') {
+      t[i].rate = getRateForMode(t[i], val);
+    }
     setFormData({ ...formData, trainers: t });
   };
+
   const removeTrainer = (i) =>
     setFormData({ ...formData, trainers: formData.trainers.filter((_, idx) => idx !== i) });
 
-  /* ── Etudiants ──────────────────────────────── */
+  /* ── Etudiants ──────────────────────────────────────────────────────────── */
   const addExistingStudent = (s) => {
     if (formData.students.find(st => st.id === s.id)) return;
     const u = s.user || {};
     setFormData({ ...formData, students: [...formData.students, {
-      id: s.id, first_name: u.first_name, last_name: u.last_name, email: u.email,
+      id: s.id,
+      first_name: u.first_name, last_name: u.last_name, email: u.email,
+      phone: u.phone, parent_phone: s.parent_phone, specialty: s.specialty,
       discount: 0, payment_mode: 'full', upfront: 0
     }]});
   };
+
   const addNewStudent = () => {
     if (!newStudent.first_name || !newStudent.email) return;
-    setFormData({ ...formData, students: [...formData.students,
-      { ...newStudent, id: null, payment_mode: 'full', upfront: 0 }
-    ]});
-    setNewStudent({ first_name: '', last_name: '', email: '', discount: 0 });
+    setFormData({ ...formData, students: [...formData.students, {
+      ...newStudent,
+      id: null,
+      payment_mode: 'full', upfront: 0
+    }]});
+    setNewStudent({
+      first_name: '', last_name: '', email: '',
+      phone: '', parent_phone: '', specialty: '',
+      discount: 0
+    });
   };
+
   const updateStudent = (i, field, val) => {
     const s = [...formData.students]; s[i][field] = val;
     setFormData({ ...formData, students: s });
   };
+
   const removeStudent = (i) =>
     setFormData({ ...formData, students: formData.students.filter((_, idx) => idx !== i) });
 
-  /* ══════════════════════════════════════════════
+  /* ══════════════════════════════════════════════════════════════════════════
      RENDER STEPS
-  ══════════════════════════════════════════════ */
+  ══════════════════════════════════════════════════════════════════════════ */
   const renderStep = () => {
     switch (currentStep) {
 
-      /* ── STEP 1 : Infos Formation ──────────── */
+      /* ── STEP 1 : Infos Formation ──────────────────────────────────────── */
       case 1:
         return (
           <div className="wizard-step fade-in">
@@ -177,7 +240,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
           </div>
         );
 
-      /* ── STEP 2 : Formateurs ───────────────── */
+      /* ── STEP 2 : Formateurs ───────────────────────────────────────────── */
       case 2:
         return (
           <div className="wizard-step fade-in">
@@ -185,21 +248,19 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
               <GraduationCap size={20} className="text-primary" /> Étape 2 : Formateurs
             </h2>
 
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 1fr',
-              gap: '1rem',
-              marginBottom: '1.25rem'
-            }}>
-              {/* Colonne gauche : formateurs existants */}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1.25rem' }}>
+              {/* Existants */}
               <div className="card bg-glass" style={{padding:'1rem'}}>
                 <h3 className="text-sm font-bold mb-1">Rechercher / Ajouter existant</h3>
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', maxHeight:'220px', overflowY:'auto', paddingRight:'4px' }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', maxHeight:'260px', overflowY:'auto', paddingRight:'4px' }}>
                   {allTrainers
                     .filter(t => !formData.trainers.find(tr => tr.id === t.id))
                     .map(t => (
                       <div key={t.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'white', padding:'0.5rem 0.75rem', borderRadius:'6px', border:'1px solid var(--surface-border)' }}>
-                        <span className="text-sm">{t.user?.first_name} {t.user?.last_name}</span>
+                        <div>
+                          <div className="text-sm font-bold">{t.user?.first_name} {t.user?.last_name}</div>
+                          <div className="text-xs text-muted">{t.specialty || 'Sans spécialité'} · {PAYMENT_MODE_LABELS[t.default_payment_mode] || t.default_payment_mode}</div>
+                        </div>
                         <button className="btn btn-sm btn-primary" onClick={() => addExistingTrainer(t)} style={{padding:'0.2rem 0.6rem'}}>
                           <Plus size={14} />
                         </button>
@@ -212,47 +273,86 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                 </div>
               </div>
 
-              {/* Colonne droite : nouveau formateur inline */}
-              <div className="card" style={{padding:'1rem'}}>
-                <h3 className="text-sm font-bold mb-1">Nouveau formateur (Inline)</h3>
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
-                  <div>
-                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Prénom *</label>
-                    <input type="text" className="input input-sm"
-                      placeholder="Prénom"
-                      value={newTrainer.first_name}
-                      onChange={e => setNewTrainer({ ...newTrainer, first_name: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Nom</label>
-                    <input type="text" className="input input-sm"
-                      placeholder="Nom"
-                      value={newTrainer.last_name}
-                      onChange={e => setNewTrainer({ ...newTrainer, last_name: e.target.value })} />
+              {/* Nouveau formateur inline — champs complets */}
+              <div className="card" style={{padding:'1rem', overflowY:'auto', maxHeight:'340px'}}>
+                <h3 className="text-sm font-bold mb-1">Nouveau formateur</h3>
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Prénom *</label>
+                      <input type="text" className="input input-sm" placeholder="Prénom"
+                        value={newTrainer.first_name}
+                        onChange={e => setNewTrainer({ ...newTrainer, first_name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Nom</label>
+                      <input type="text" className="input input-sm" placeholder="Nom"
+                        value={newTrainer.last_name}
+                        onChange={e => setNewTrainer({ ...newTrainer, last_name: e.target.value })} />
+                    </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Email *</label>
-                    <input type="email" className="input input-sm"
-                      placeholder="email@exemple.com"
+                    <input type="email" className="input input-sm" placeholder="email@exemple.com"
                       value={newTrainer.email}
                       onChange={e => setNewTrainer({ ...newTrainer, email: e.target.value })} />
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Mode honoraire</label>
+                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Téléphone</label>
+                    <input type="tel" className="input input-sm" placeholder="06xxxxxxxx"
+                      value={newTrainer.phone}
+                      onChange={e => setNewTrainer({ ...newTrainer, phone: e.target.value })} />
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Spécialité</label>
+                      <input type="text" className="input input-sm" placeholder="Ex : React"
+                        value={newTrainer.specialty}
+                        onChange={e => setNewTrainer({ ...newTrainer, specialty: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Niveau</label>
+                      <input type="text" className="input input-sm" placeholder="Ex : Senior"
+                        value={newTrainer.level}
+                        onChange={e => setNewTrainer({ ...newTrainer, level: e.target.value })} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Mode honoraire par défaut</label>
                     <select className="input input-sm"
                       value={newTrainer.payment_mode}
                       onChange={e => setNewTrainer({ ...newTrainer, payment_mode: e.target.value })}>
-                      <option value="hourly">Horaire</option>
+                      <option value="hourly">Par heure</option>
                       <option value="per_student">Par étudiant</option>
-                      <option value="fixed">Forfait</option>
+                      <option value="fixed">Forfait fixe</option>
                       <option value="monthly">Mensuel</option>
                     </select>
                   </div>
-                  <div>
-                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Tarif par défaut (MAD)</label>
-                    <input type="number" className="input input-sm"
-                      value={newTrainer.rate}
-                      onChange={e => setNewTrainer({ ...newTrainer, rate: parseFloat(e.target.value) })} />
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Taux horaire (MAD/h)</label>
+                      <input type="number" className="input input-sm" min="0"
+                        value={newTrainer.hourly_rate}
+                        onChange={e => setNewTrainer({ ...newTrainer, hourly_rate: parseFloat(e.target.value) || 0 })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Salaire mensuel (MAD)</label>
+                      <input type="number" className="input input-sm" min="0"
+                        value={newTrainer.monthly_salary}
+                        onChange={e => setNewTrainer({ ...newTrainer, monthly_salary: parseFloat(e.target.value) || 0 })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Prix/étudiant (MAD)</label>
+                      <input type="number" className="input input-sm" min="0"
+                        value={newTrainer.price_per_student}
+                        onChange={e => setNewTrainer({ ...newTrainer, price_per_student: parseFloat(e.target.value) || 0 })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Forfait fixe (MAD)</label>
+                      <input type="number" className="input input-sm" min="0"
+                        value={newTrainer.fixed_price_per_training}
+                        onChange={e => setNewTrainer({ ...newTrainer, fixed_price_per_training: parseFloat(e.target.value) || 0 })} />
+                    </div>
                   </div>
                   <button className="btn btn-primary w-full" style={{marginTop:'0.25rem'}} onClick={addNewTrainer}>
                     <Plus size={14} /> Ajouter au lancement
@@ -261,7 +361,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
               </div>
             </div>
 
-            {/* Liste des formateurs sélectionnés */}
+            {/* Formateurs sélectionnés */}
             {formData.trainers.length > 0 && (
               <div>
                 <label className="text-sm font-bold" style={{display:'block', marginBottom:'0.75rem'}}>Formateurs sélectionnés :</label>
@@ -275,7 +375,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                           </div>
                           <div>
                             <div className="font-bold">{tr.first_name} {tr.last_name}</div>
-                            <div className="text-xs text-muted">{tr.email}</div>
+                            <div className="text-xs text-muted">{tr.email}{tr.specialty ? ` · ${tr.specialty}` : ''}</div>
                           </div>
                         </div>
                         <button className="btn-icon text-error" onClick={() => removeTrainer(idx)}><Trash2 size={16} /></button>
@@ -284,9 +384,9 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                         <div>
                           <label className="text-xs uppercase font-bold text-muted" style={{display:'block', marginBottom:'3px'}}>Mode Honoraire</label>
                           <select className="input input-sm" value={tr.payment_mode} onChange={e => updateTrainer(idx, 'payment_mode', e.target.value)}>
-                            <option value="hourly">Horaire</option>
+                            <option value="hourly">Par heure</option>
                             <option value="per_student">Par étudiant</option>
-                            <option value="fixed">Forfait</option>
+                            <option value="fixed">Forfait fixe</option>
                             <option value="monthly">Mensuel</option>
                           </select>
                         </div>
@@ -312,7 +412,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
           </div>
         );
 
-      /* ── STEP 3 : Etudiants ────────────────── */
+      /* ── STEP 3 : Etudiants ────────────────────────────────────────────── */
       case 3:
         return (
           <div className="wizard-step fade-in">
@@ -324,12 +424,15 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
               {/* Existants */}
               <div className="card bg-glass" style={{padding:'1rem'}}>
                 <h3 className="text-sm font-bold mb-1">Inscrire existants</h3>
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', maxHeight:'220px', overflowY:'auto', paddingRight:'4px' }}>
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.5rem', maxHeight:'260px', overflowY:'auto', paddingRight:'4px' }}>
                   {allStudents
                     .filter(s => !formData.students.find(st => st.id === s.id))
                     .map(s => (
                       <div key={s.id} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'white', padding:'0.5rem 0.75rem', borderRadius:'6px', border:'1px solid var(--surface-border)' }}>
-                        <span className="text-sm">{s.user?.first_name} {s.user?.last_name}</span>
+                        <div>
+                          <div className="text-sm font-bold">{s.user?.first_name} {s.user?.last_name}</div>
+                          <div className="text-xs text-muted">{s.specialty || 'Sans spécialité'}{s.parent_phone ? ` · Tél père: ${s.parent_phone}` : ''}</div>
+                        </div>
                         <button className="btn btn-sm btn-primary" onClick={() => addExistingStudent(s)} style={{padding:'0.2rem 0.6rem'}}>
                           <Plus size={14} />
                         </button>
@@ -342,27 +445,55 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                 </div>
               </div>
 
-              {/* Nouveau inline */}
-              <div className="card" style={{padding:'1rem'}}>
-                <h3 className="text-sm font-bold mb-1">Nouveau compte étudiant (Inline)</h3>
-                <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
-                  <div>
-                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Prénom *</label>
-                    <input type="text" className="input input-sm" placeholder="Prénom"
-                      value={newStudent.first_name}
-                      onChange={e => setNewStudent({ ...newStudent, first_name: e.target.value })} />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Nom</label>
-                    <input type="text" className="input input-sm" placeholder="Nom"
-                      value={newStudent.last_name}
-                      onChange={e => setNewStudent({ ...newStudent, last_name: e.target.value })} />
+              {/* Nouveau étudiant inline — champs complets */}
+              <div className="card" style={{padding:'1rem', overflowY:'auto', maxHeight:'340px'}}>
+                <h3 className="text-sm font-bold mb-1">Nouveau compte étudiant</h3>
+                <div style={{ display:'flex', flexDirection:'column', gap:'0.55rem' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Prénom *</label>
+                      <input type="text" className="input input-sm" placeholder="Prénom"
+                        value={newStudent.first_name}
+                        onChange={e => setNewStudent({ ...newStudent, first_name: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Nom</label>
+                      <input type="text" className="input input-sm" placeholder="Nom"
+                        value={newStudent.last_name}
+                        onChange={e => setNewStudent({ ...newStudent, last_name: e.target.value })} />
+                    </div>
                   </div>
                   <div>
                     <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Email *</label>
                     <input type="email" className="input input-sm" placeholder="email@exemple.com"
                       value={newStudent.email}
                       onChange={e => setNewStudent({ ...newStudent, email: e.target.value })} />
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.5rem' }}>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Téléphone</label>
+                      <input type="tel" className="input input-sm" placeholder="06xxxxxxxx"
+                        value={newStudent.phone}
+                        onChange={e => setNewStudent({ ...newStudent, phone: e.target.value })} />
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Téléphone père</label>
+                      <input type="tel" className="input input-sm" placeholder="06xxxxxxxx"
+                        value={newStudent.parent_phone}
+                        onChange={e => setNewStudent({ ...newStudent, parent_phone: e.target.value })} />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Spécialité</label>
+                    <input type="text" className="input input-sm" placeholder="Ex : Développement web"
+                      value={newStudent.specialty}
+                      onChange={e => setNewStudent({ ...newStudent, specialty: e.target.value })} />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Remise par défaut (%)</label>
+                    <input type="number" className="input input-sm" min="0" max="100"
+                      value={newStudent.discount}
+                      onChange={e => setNewStudent({ ...newStudent, discount: parseFloat(e.target.value) || 0 })} />
                   </div>
                   <button className="btn btn-primary w-full" style={{marginTop:'0.25rem'}} onClick={addNewStudent}>
                     <Plus size={14} /> Créer et Inscrire
@@ -378,14 +509,18 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                   {formData.students.map((st, idx) => (
                     <div key={idx} className="card" style={{ padding:'1rem', borderLeft:'4px solid var(--success)' }}>
                       <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem' }}>
-                        <div className="font-bold">{st.first_name} {st.last_name}</div>
+                        <div>
+                          <div className="font-bold">{st.first_name} {st.last_name}</div>
+                          <div className="text-xs text-muted">{st.specialty || ''}{st.parent_phone ? ` · 👨 ${st.parent_phone}` : ''}</div>
+                        </div>
                         <button className="btn-icon text-error" onClick={() => removeStudent(idx)}><Trash2 size={16} /></button>
                       </div>
                       <div style={{ display:'flex', alignItems:'center', gap:'0.75rem' }}>
                         <label className="text-sm">Remise (%)</label>
                         <input type="number" className="input input-sm" style={{width:'80px', marginBottom:0}}
+                          min="0" max="100"
                           value={st.discount}
-                          onChange={e => updateStudent(idx, 'discount', parseFloat(e.target.value))} />
+                          onChange={e => updateStudent(idx, 'discount', parseFloat(e.target.value) || 0)} />
                       </div>
                     </div>
                   ))}
@@ -400,7 +535,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
           </div>
         );
 
-      /* ── STEP 4 : Paiements Etudiants ──────── */
+      /* ── STEP 4 : Paiements Etudiants ──────────────────────────────────── */
       case 4:
         return (
           <div className="wizard-step fade-in">
@@ -418,17 +553,20 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                 return (
                   <div key={idx} className="card" style={{padding:'1rem'}}>
                     <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.75rem' }}>
-                      <div className="font-bold">{st.first_name} {st.last_name}</div>
+                      <div>
+                        <div className="font-bold">{st.first_name} {st.last_name}</div>
+                        {st.discount > 0 && <div className="text-xs text-muted">Remise {st.discount}% appliquée</div>}
+                      </div>
                       <div className="text-primary font-bold">{finalPrice.toLocaleString()} MAD</div>
                     </div>
                     <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:'0.75rem' }}>
                       <div>
                         <label className="text-xs font-bold text-muted" style={{display:'block', marginBottom:'3px'}}>MODE</label>
                         <select className="input input-sm" value={st.payment_mode} onChange={e => updateStudent(idx, 'payment_mode', e.target.value)}>
-                          <option value="full">Complet</option>
+                          <option value="full">Paiement complet</option>
                           <option value="monthly">Mensuel</option>
-                          <option value="installment">Tranches</option>
-                          <option value="flexible">Flexible</option>
+                          <option value="installment">Par tranches</option>
+                          <option value="flexible">À volonté</option>
                         </select>
                       </div>
                       <div>
@@ -455,7 +593,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
           </div>
         );
 
-      /* ── STEP 5 : Recap ────────────────────── */
+      /* ── STEP 5 : Recap ────────────────────────────────────────────────── */
       case 5:
         return (
           <div className="wizard-step fade-in">
@@ -497,6 +635,12 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                   {formData.students.reduce((sum, st) => sum + (st.upfront || 0), 0).toLocaleString()} MAD
                 </span>
               </div>
+              <div style={{ display:'flex', justifyContent:'space-between', padding:'0.4rem 0', borderBottom:'1px solid #f0f2f5' }}>
+                <span>Remises accordées :</span>
+                <span className="font-bold text-warning">
+                  -{formData.students.reduce((sum, st) => sum + (formData.training.price * (st.discount / 100)), 0).toLocaleString()} MAD
+                </span>
+              </div>
               <div style={{ display:'flex', justifyContent:'space-between', padding:'0.5rem 0 0.25rem' }}>
                 <span className="font-bold">MARGE BRUTE (Estimation) :</span>
                 <span className="font-bold text-primary text-lg">
@@ -504,6 +648,19 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                 </span>
               </div>
             </div>
+
+            {/* Tableau récap formateurs */}
+            {formData.trainers.length > 0 && (
+              <div className="card mb-1" style={{padding:'1rem'}}>
+                <h3 className="text-sm font-bold mb-1" style={{borderBottom:'1px solid var(--surface-border)', paddingBottom:'0.5rem'}}>Formateurs assignés</h3>
+                {formData.trainers.map((tr, idx) => (
+                  <div key={idx} style={{ display:'flex', justifyContent:'space-between', padding:'0.4rem 0', borderBottom:'1px solid #f0f2f5' }}>
+                    <span>{tr.first_name} {tr.last_name}{tr.is_primary ? ' ⭐' : ''}</span>
+                    <span className="text-sm text-muted">{PAYMENT_MODE_LABELS[tr.payment_mode]} · {tr.rate} MAD</span>
+                  </div>
+                ))}
+              </div>
+            )}
 
             <button
               className="btn btn-primary btn-lg w-full"
@@ -521,14 +678,14 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
     }
   };
 
-  /* ══════════════════════════════════════════════
+  /* ══════════════════════════════════════════════════════════════════════════
      SHELL
-  ══════════════════════════════════════════════ */
+  ══════════════════════════════════════════════════════════════════════════ */
   return (
     <div className="container p-0">
       <div className="card border-0 shadow-lg overflow-hidden" style={{padding:0}}>
 
-        {/* Header bleu */}
+        {/* Header */}
         <div style={{ background:'var(--primary)', padding:'1.25rem 1.5rem', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           <div style={{ display:'flex', alignItems:'center', gap:'1rem' }}>
             <div style={{ padding:'0.5rem', borderRadius:'10px', background:'rgba(255,255,255,0.2)', display:'flex' }}>
