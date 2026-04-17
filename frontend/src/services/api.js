@@ -219,7 +219,20 @@ export const roomsService = {
   remove: async (id) => {
     const response = await api.delete(`/rooms/${id}`);
     return response.data;
-  }
+  },
+  getOccupationStats: async (dateFrom = null, dateTo = null) => {
+    const params = {};
+    if (dateFrom) params.date_from = dateFrom;
+    if (dateTo) params.date_to = dateTo;
+    const response = await api.get('/rooms/stats/occupation', { params });
+    return response.data;
+  },
+  getWeekConsolidated: async (weekStart = null) => {
+    const params = {};
+    if (weekStart) params.week_start = weekStart;
+    const response = await api.get('/rooms/stats/week-consolidated', { params });
+    return response.data;
+  },
 };
 
 export const attendanceService = {
