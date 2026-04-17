@@ -72,7 +72,30 @@ export const trainingService = {
 };
 
 export const userService = {
-// ... existing
+  getStudents: async () => {
+    const response = await api.get('/users/students');
+    return response.data;
+  },
+  getTrainers: async () => {
+    const response = await api.get('/users/trainers');
+    return response.data;
+  },
+  createStudent: async (data) => {
+    const response = await api.post('/users/students', data);
+    return response.data;
+  },
+  createTrainer: async (data) => {
+    const response = await api.post('/users/trainers', data);
+    return response.data;
+  },
+  updateUser: async (id, data) => {
+    const response = await api.patch(`/users/${id}`, data);
+    return response.data;
+  },
+  deleteUser: async (id) => {
+    const response = await api.delete(`/users/${id}`);
+    return response.data;
+  }
 };
 
 export const reportService = {
@@ -106,6 +129,10 @@ export const reportService = {
   },
   getPackReport: async (id) => {
     const response = await api.get(`/reports/pack/${id}`);
+    return response.data;
+  },
+  getDashboardStats: async () => {
+    const response = await api.get('/reports/dashboard');
     return response.data;
   }
 };
@@ -177,15 +204,38 @@ export const attendanceService = {
 
 export const draftsService = {
   getDrafts: async () => {
-    const response = await api.get('/drafts/');
+    const response = await api.get('/wizard/drafts');
     return response.data;
   },
   saveDraft: async (data) => {
-    const response = await api.post('/drafts/', data);
+    const response = await api.post('/wizard/drafts', data);
+    return response.data;
+  },
+  updateDraft: async (id, data) => {
+    const response = await api.put(`/wizard/drafts/${id}`, data);
     return response.data;
   },
   deleteDraft: async (id) => {
-    const response = await api.delete(`/drafts/${id}`);
+    const response = await api.delete(`/wizard/drafts/${id}`);
+    return response.data;
+  }
+};
+
+export const wizardService = {
+  searchTrainers: async (q) => {
+    const response = await api.get(`/wizard/step2/trainers/search?q=${q}`);
+    return response.data;
+  },
+  searchStudents: async (q) => {
+    const response = await api.get(`/wizard/step3/students/search?q=${q}`);
+    return response.data;
+  },
+  getPreview: async (data) => {
+    const response = await api.post('/wizard/preview', data);
+    return response.data;
+  },
+  launch: async (data) => {
+    const response = await api.post('/wizard/launch', data);
     return response.data;
   }
 };

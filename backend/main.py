@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import auth, trainings, reports, users, sessions, payments, attendance, drafts, packs, enrollments, wizard
+from app.api import auth, trainings, reports, users, sessions, payments, attendance, packs, enrollments, wizard
 from app.database import engine, Base
 from app.models import models
 
@@ -30,7 +30,6 @@ app.include_router(payments.router,    prefix="/api/payments",    tags=["Paiemen
 app.include_router(attendance.router,  prefix="/api/attendance",  tags=["Presences"])
 app.include_router(wizard.router,      prefix="/api/wizard",      tags=["Wizard Lancement"])
 app.include_router(reports.router,     prefix="/api/reports",     tags=["Rapports"])
-app.include_router(drafts.router,      prefix="/api/drafts",      tags=["Brouillons"])
 
 @app.get("/")
 def root():

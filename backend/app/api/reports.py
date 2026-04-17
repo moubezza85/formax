@@ -25,6 +25,39 @@ def get_revenue_report(db: Session = Depends(get_db)):
         "revenue_per_training": [{"title": t, "revenue": r} for t, r in revenue_per_training]
     }
 
+@router.get("/dashboard", dependencies=[Depends(check_role([UserRole.ADMIN]))])
+def get_dashboard_kpis(db: Session = Depends(get_db)):
+    # 1. CA & Profit
+    total_revenue = db.query(func.sum(Enrollment.final_price)).scalar() or 0.0
+    total_expenses = db.query(func.sum(TrainerPayment.amount)).scalar() or 0.0
+    
+    # 2. Counts
+    student_count = db.query(Student).filter(Student.is_deleted == False).count()
+    active_trainings = db.query(Training).filter(Training.status == "active", Training.is_deleted == False).count()
+    
+    # 3. Debtors (Top 5)
+    all_enrollments = db.query(Enrollment).filter(Enrollment.is_deleted == False).all()
+    debtors = []
+    for e in all_enrollments:
+        total_paid = db.query(func.sum(StudentPayment.amount)).filter(StudentPayment.enrollment_id == e.id).scalar() or 0.0
+        remaining = (e.final_price or 0) - total_paid
+        if remaining > 0:
+            user = e.student.user
+            debtors.append({
+                "student_name": f"{user.first_name} {user.last_name}",
+                "remaining_balance": round(remaining, 2)
+            })
+    
+    debtors.sort(key=lambda x: x["remaining_balance"], reverse=True)
+    
+    return {
+        "revenue": round(total_revenue, 2),
+        "profit": round(total_revenue - total_expenses, 2),
+        "studentCount": student_count,
+        "trainingCount": active_trainings,
+        "debtors": debtors[:5]
+    }
+
 @router.get("/profit", dependencies=[Depends(check_role([UserRole.ADMIN]))])
 def get_profit_report(db: Session = Depends(get_db)):
     total_revenue = db.query(func.sum(Enrollment.final_price)).scalar() or 0.0

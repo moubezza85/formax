@@ -14,19 +14,8 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const rev = await reportService.getRevenue();
-        const prof = await reportService.getProfit();
-        const students = await userService.getStudents();
-        const trainings = await trainingService.getTrainings();
-        const debts = await reportService.getStudentDebt();
-        
-        setDashboardData({
-          revenue: rev.total_revenue || 0,
-          profit: prof.net_profit || 0,
-          studentCount: students.length,
-          trainingCount: trainings.length,
-          debtors: debts.slice(0, 5) // Show top 5 debtors
-        });
+        const stats = await reportService.getDashboardStats();
+        setDashboardData(stats);
       } catch (err) {
         console.error("Failed to fetch dashboard data", err);
       }
