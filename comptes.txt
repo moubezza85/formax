@@ -1,0 +1,6 @@
+Email : admin@formax.ma
+Mot de passe : admin123
+Autres comptes de test :
+
+Formateur : trainer@formax.ma / trainer123
+Étudiant : student@formax.ma / student123
