@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api import auth, trainings, reports, users, sessions, payments, attendance, packs, enrollments, wizard
+from app.api import trainers
 from app.database import engine, Base
 from app.models import models
 
@@ -22,6 +23,7 @@ app.add_middleware(
 
 app.include_router(auth.router,        prefix="/api/auth",        tags=["Authentification"])
 app.include_router(users.router,       prefix="/api/users",       tags=["Utilisateurs"])
+app.include_router(trainers.router,    prefix="/api/trainers",    tags=["Formateurs"])
 app.include_router(trainings.router,   prefix="/api/trainings",   tags=["Formations"])
 app.include_router(packs.router,       prefix="/api/packs",       tags=["Packs"])
 app.include_router(enrollments.router, prefix="/api/enrollments", tags=["Inscriptions"])
