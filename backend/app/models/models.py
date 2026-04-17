@@ -85,12 +85,12 @@ class Training(Base, SoftDeleteMixin):
     id = Column(Integer, primary_key=True, index=True)
     title = Column(String, nullable=False)
     description = Column(Text)
-    price = Column(Float, nullable=False) # MAD
+    price = Column(Float, nullable=False)
     start_date = Column(DateTime)
     end_date = Column(DateTime)
     total_hours = Column(Float)
     masse_horaire = Column(Float)
-    status = Column(String, default="draft") # draft | active | completed
+    status = Column(String, default="draft")
 
     packs = relationship("Pack", secondary=pack_training, back_populates="trainings")
     enrollments = relationship("Enrollment", back_populates="training")
@@ -100,7 +100,7 @@ class Pack(Base, SoftDeleteMixin):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     description = Column(Text, nullable=True)
-    discount_rate = Column(Float, default=0.0) # e.g., 0.1 for 10%
+    discount_rate = Column(Float, default=0.0)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     trainings = relationship("Training", secondary=pack_training, back_populates="packs")
@@ -117,7 +117,7 @@ class Enrollment(Base, SoftDeleteMixin):
     payment_mode = Column(SqlEnum(StudentPaymentMode), default=StudentPaymentMode.FULL)
     monthly_amount = Column(Float, nullable=True)
     installment_count = Column(Integer, nullable=True)
-    status = Column(String, default="active") # active, completed, cancelled
+    status = Column(String, default="active")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     student = relationship("Student", back_populates="enrollments")
@@ -139,15 +139,47 @@ class TrainerAssignment(Base, SoftDeleteMixin):
     training = relationship("Training")
     honoraire_payments = relationship("TrainerPayment", back_populates="assignment")
 
+# ─────────────────────────────────────────────
+# Room model — salles de formation
+# ─────────────────────────────────────────────
+class Room(Base, SoftDeleteMixin):
+    __tablename__ = "rooms"
+    id          = Column(Integer, primary_key=True, index=True)
+    name        = Column(String, unique=True, nullable=False)
+    capacity    = Column(Integer, nullable=True)
+    description = Column(String, nullable=True)
+    color       = Column(String, default="#4f98a3")  # couleur dans le planning
+    is_active   = Column(Boolean, default=True)
+    created_at  = Column(DateTime(timezone=True), server_default=func.now())
+
+    sessions = relationship("Session", back_populates="room_obj")
+
+# ─────────────────────────────────────────────
+# Session model — séances planifiées
+# room_id FK vers Room (nouveau)
+# start_time / end_time remplacent date + duration_hours
+# room (String) conservé pour compatibilité migrations existantes
+# ─────────────────────────────────────────────
 class Session(Base, SoftDeleteMixin):
     __tablename__ = "sessions"
-    id = Column(Integer, primary_key=True, index=True)
-    training_id = Column(Integer, ForeignKey("trainings.id"))
-    trainer_id = Column(Integer, ForeignKey("trainers.id"))
-    date = Column(DateTime)
-    duration_hours = Column(Float)
-    room = Column(String, nullable=True)
-    status = Column(String, default="planned") # planned | completed | cancelled
+    id           = Column(Integer, primary_key=True, index=True)
+    training_id  = Column(Integer, ForeignKey("trainings.id"))
+    trainer_id   = Column(Integer, ForeignKey("trainers.id"))
+    # Legacy field kept for backward compat
+    date         = Column(DateTime, nullable=True)
+    duration_hours = Column(Float, nullable=True)
+    room         = Column(String, nullable=True)
+    # New structured fields
+    room_id      = Column(Integer, ForeignKey("rooms.id"), nullable=True)
+    start_time   = Column(DateTime(timezone=True), nullable=True)
+    end_time     = Column(DateTime(timezone=True), nullable=True)
+    notes        = Column(Text, nullable=True)
+    status       = Column(String, default="planned")  # planned | completed | cancelled
+
+    training  = relationship("Training")
+    trainer   = relationship("Trainer")
+    room_obj  = relationship("Room", back_populates="sessions")
+    attendances = relationship("Attendance", back_populates="session")
 
 class StudentPayment(Base, SoftDeleteMixin):
     __tablename__ = "student_payments"
@@ -158,7 +190,7 @@ class StudentPayment(Base, SoftDeleteMixin):
     payment_type = Column(SqlEnum(StudentPaymentType))
     remaining_balance = Column(Float)
     notes = Column(String, nullable=True)
-    paid_by = Column(String, nullable=True) # cash | virement | chèque
+    paid_by = Column(String, nullable=True)
 
     enrollment = relationship("Enrollment", back_populates="payments")
 
@@ -181,7 +213,9 @@ class Attendance(Base, SoftDeleteMixin):
     session_id = Column(Integer, ForeignKey("sessions.id"))
     student_id = Column(Integer, ForeignKey("students.id"))
     is_present = Column(Boolean, default=True)
-    justification = Column(String, nullable=True) # Reason for absence
+    justification = Column(String, nullable=True)
+
+    session = relationship("Session", back_populates="attendances")
 
 class WizardDraft(Base, SoftDeleteMixin):
     __tablename__ = "wizard_drafts"

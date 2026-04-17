@@ -161,8 +161,12 @@ export const paymentsService = {
 };
 
 export const sessionsService = {
-  getAllSessions: async () => {
-    const response = await api.get('/sessions/');
+  getAllSessions: async (params = {}) => {
+    const response = await api.get('/sessions/', { params });
+    return response.data;
+  },
+  getPlanning: async (params = {}) => {
+    const response = await api.get('/sessions/planning', { params });
     return response.data;
   },
   listRooms: async () => {
@@ -177,12 +181,43 @@ export const sessionsService = {
     const response = await api.post('/sessions/', data);
     return response.data;
   },
+  createPlannedSession: async (data) => {
+    const response = await api.post('/sessions/plan', data);
+    return response.data;
+  },
+  updatePlannedSession: async (id, data) => {
+    const response = await api.patch(`/sessions/plan/${id}`, data);
+    return response.data;
+  },
+  cancelSession: async (id) => {
+    const response = await api.delete(`/sessions/plan/${id}`);
+    return response.data;
+  },
   completeSession: async (id) => {
     const response = await api.patch(`/sessions/${id}/complete`);
     return response.data;
   },
   getProgress: async (training_id) => {
     const response = await api.get(`/sessions/progress/${training_id}`);
+    return response.data;
+  }
+};
+
+export const roomsService = {
+  list: async (activeOnly = true) => {
+    const response = await api.get('/rooms/', { params: { active_only: activeOnly } });
+    return response.data;
+  },
+  create: async (data) => {
+    const response = await api.post('/rooms/', data);
+    return response.data;
+  },
+  update: async (id, data) => {
+    const response = await api.patch(`/rooms/${id}`, data);
+    return response.data;
+  },
+  remove: async (id) => {
+    const response = await api.delete(`/rooms/${id}`);
     return response.data;
   }
 };
