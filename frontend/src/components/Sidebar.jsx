@@ -14,7 +14,8 @@ import {
   AlertCircle,
   Wallet,
   Tag,
-  Calendar
+  Calendar,
+  BarChart2
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -23,15 +24,16 @@ export default function Sidebar() {
 
   const menuItems = [
     { path: '/', name: 'Tableau de bord', icon: LayoutDashboard, end: true },
-    { path: '/users/students', name: 'Étudiants', icon: Users },
+    { path: '/users/students', name: '\u00c9tudiants', icon: Users },
     { path: '/trainers', name: 'Formateurs', icon: GraduationCap },
     { path: '/formations/catalog', name: 'Catalogue', icon: BookOpen },
     { path: '/formations/packs', name: 'Packs Promo', icon: Package },
     { path: '/formations/launch', name: 'Lancer Formation', icon: PlayCircle },
-    { path: '/formations/active', name: 'Formations Lancées', icon: Activity },
+    { path: '/formations/active', name: 'Formations Lanc\u00e9es', icon: Activity },
     { path: '/enrollments', name: 'Inscriptions', icon: Tag },
     { path: '/planning/rooms', name: 'Planning Salles', icon: Calendar },
-    { path: '/reports/student-debt', name: 'Dettes Étudiants', icon: AlertCircle },
+    { path: '/reports', name: 'Rapports', icon: BarChart2 },
+    { path: '/reports/student-debt', name: 'Dettes \u00c9tudiants', icon: AlertCircle },
     { path: '/reports/trainer-earnings', name: 'Gains Formateurs', icon: Wallet },
     { path: '/payments', name: 'Paiements', icon: CreditCard },
   ];
@@ -65,7 +67,7 @@ export default function Sidebar() {
         </div>
         <button onClick={logout} className="logout-btn">
           <LogOut size={18} />
-          <span>Déconnexion</span>
+          <span>D\u00e9connexion</span>
         </button>
       </div>
     </aside>

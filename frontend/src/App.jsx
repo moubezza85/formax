@@ -15,6 +15,7 @@ import PacksPage from './pages/PacksPage';
 import StudentDebtPage from './pages/StudentDebtPage';
 import TrainerEarningsPage from './pages/TrainerEarningsPage';
 
+import ReportsPage from './pages/reports/ReportsPage';
 import TrainingReportPage from './pages/reports/TrainingReportPage';
 import StudentReportPage from './pages/reports/StudentReportPage';
 import TrainerReportPage from './pages/reports/TrainerReportPage';
@@ -54,9 +55,9 @@ function App() {
           <Route path="/certificate/:id" element={<ProtectedLayout><CertificatePage /></ProtectedLayout>} />
           <Route path="/formations/sessions/:id" element={<ProtectedLayout><SessionDetailsPage /></ProtectedLayout>} />
           <Route path="/payments" element={<ProtectedLayout><PaymentsPage /></ProtectedLayout>} />
+          <Route path="/reports" element={<ProtectedLayout><ReportsPage /></ProtectedLayout>} />
           <Route path="/reports/student-debt" element={<ProtectedLayout><StudentDebtPage /></ProtectedLayout>} />
           <Route path="/reports/trainer-earnings" element={<ProtectedLayout><TrainerEarningsPage /></ProtectedLayout>} />
-          {/* /reports/training/:id et alias /reports/formation/:id */}
           <Route path="/reports/training/:id" element={<ProtectedLayout><TrainingReportPage /></ProtectedLayout>} />
           <Route path="/reports/formation/:id" element={<ProtectedLayout><TrainingReportPage /></ProtectedLayout>} />
           <Route path="/reports/student/:id" element={<ProtectedLayout><StudentReportPage /></ProtectedLayout>} />
