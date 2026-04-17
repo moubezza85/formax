@@ -9,9 +9,9 @@ import {
 const steps = [
   { id: 1, title: 'Infos Formation', icon: BookOpen },
   { id: 2, title: 'Formateurs',      icon: GraduationCap },
-  { id: 3, title: '\u00c9tudiants',        icon: Users },
-  { id: 4, title: 'Paiements \u00c9tudiants', icon: CreditCard },
-  { id: 5, title: 'R\u00e9capitulatif',   icon: CheckCircle },
+  { id: 3, title: 'Étudiants',       icon: Users },
+  { id: 4, title: 'Paiements Étudiants', icon: CreditCard },
+  { id: 5, title: 'Récapitulatif',   icon: CheckCircle },
 ];
 
 export default function LaunchTrainingWizard({ initialData, initialStep, draftName }) {
@@ -49,7 +49,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
     setIsSaving(true);
     try {
       await draftsService.saveDraft({ name, current_step: currentStep, data_json: formData });
-      if (!draftName && !manualName) alert('Brouillon sauvegard\u00e9 !');
+      if (!draftName && !manualName) alert('Brouillon sauvegardé !');
     } catch (err) {
       console.error('Save error:', err);
     } finally {
@@ -62,7 +62,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
     setIsLaunching(true);
     try {
       await trainingService.launchTraining(formData);
-      alert('Formation lanc\u00e9e avec succ\u00e8s !');
+      alert('Formation lancée avec succès !');
       window.location.href = '/formations/active';
     } catch (err) {
       alert('Erreur lors du lancement : ' + (err.response?.data?.detail || err.message));
@@ -133,10 +133,10 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
         return (
           <div className="wizard-step fade-in">
             <h2 className="mb-1 flex items-center gap-0-5">
-              <BookOpen size={20} className="text-primary" /> \u00c9tape 1\u00a0: Infos Formation
+              <BookOpen size={20} className="text-primary" /> Étape 1 : Infos Formation
             </h2>
             <div className="card bg-glass mb-1" style={{padding:'1.25rem'}}>
-              <label className="text-sm font-bold block mb-0-5">S\u00e9lectionner une formation existante</label>
+              <label className="text-sm font-bold block mb-0-5">Sélectionner une formation existante</label>
               <select
                 className="input"
                 value={formData.training.id || ''}
@@ -146,14 +146,14 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                   else   setFormData({ ...formData, training: { id: null, title: '', description: '', price: 0, masse_horaire: 0 } });
                 }}
               >
-                <option value="">-- Cr\u00e9er une nouvelle formation --</option>
+                <option value="">-- Créer une nouvelle formation --</option>
                 {trainings.map(t => <option key={t.id} value={t.id}>{t.title} ({t.price} MAD)</option>)}
               </select>
 
               <div className="grid-2" style={{marginTop:'0.75rem'}}>
                 <div className="col-span-2">
                   <label className="text-sm font-bold block mb-0-5">Titre de la formation</label>
-                  <input type="text" className="input" placeholder="Ex\u00a0: React Masterclass"
+                  <input type="text" className="input" placeholder="Ex : React Masterclass"
                     value={formData.training.title}
                     onChange={e => setFormData({ ...formData, training: { ...formData.training, title: e.target.value }})}
                     disabled={!!formData.training.id} />
@@ -182,10 +182,9 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
         return (
           <div className="wizard-step fade-in">
             <h2 className="mb-1 flex items-center gap-0-5">
-              <GraduationCap size={20} className="text-primary" /> \u00c9tape 2\u00a0: Formateurs
+              <GraduationCap size={20} className="text-primary" /> Étape 2 : Formateurs
             </h2>
 
-            {/* Deux colonnes : Existants | Nouveau inline */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
@@ -218,9 +217,9 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                 <h3 className="text-sm font-bold mb-1">Nouveau formateur (Inline)</h3>
                 <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
                   <div>
-                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Pr\u00e9nom *</label>
+                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Prénom *</label>
                     <input type="text" className="input input-sm"
-                      placeholder="Pr\u00e9nom"
+                      placeholder="Prénom"
                       value={newTrainer.first_name}
                       onChange={e => setNewTrainer({ ...newTrainer, first_name: e.target.value })} />
                   </div>
@@ -244,13 +243,13 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                       value={newTrainer.payment_mode}
                       onChange={e => setNewTrainer({ ...newTrainer, payment_mode: e.target.value })}>
                       <option value="hourly">Horaire</option>
-                      <option value="per_student">Par \u00e9tudiant</option>
+                      <option value="per_student">Par étudiant</option>
                       <option value="fixed">Forfait</option>
                       <option value="monthly">Mensuel</option>
                     </select>
                   </div>
                   <div>
-                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Tarif par d\u00e9faut (MAD)</label>
+                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Tarif par défaut (MAD)</label>
                     <input type="number" className="input input-sm"
                       value={newTrainer.rate}
                       onChange={e => setNewTrainer({ ...newTrainer, rate: parseFloat(e.target.value) })} />
@@ -265,7 +264,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
             {/* Liste des formateurs sélectionnés */}
             {formData.trainers.length > 0 && (
               <div>
-                <label className="text-sm font-bold" style={{display:'block', marginBottom:'0.75rem'}}>Formateurs s\u00e9lectionn\u00e9s :</label>
+                <label className="text-sm font-bold" style={{display:'block', marginBottom:'0.75rem'}}>Formateurs sélectionnés :</label>
                 <div style={{ display:'flex', flexDirection:'column', gap:'0.75rem' }}>
                   {formData.trainers.map((tr, idx) => (
                     <div key={idx} className="card" style={{ padding:'1rem', borderLeft:'4px solid var(--primary)' }}>
@@ -286,7 +285,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                           <label className="text-xs uppercase font-bold text-muted" style={{display:'block', marginBottom:'3px'}}>Mode Honoraire</label>
                           <select className="input input-sm" value={tr.payment_mode} onChange={e => updateTrainer(idx, 'payment_mode', e.target.value)}>
                             <option value="hourly">Horaire</option>
-                            <option value="per_student">Par \u00e9tudiant</option>
+                            <option value="per_student">Par étudiant</option>
                             <option value="fixed">Forfait</option>
                             <option value="monthly">Mensuel</option>
                           </select>
@@ -307,7 +306,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
             )}
             {formData.trainers.length === 0 && (
               <p className="text-sm text-muted" style={{textAlign:'center', padding:'1rem', background:'#f8f9fa', borderRadius:'8px', border:'1px dashed var(--surface-border)'}}>
-                Aucun formateur s\u00e9lectionn\u00e9 pour l\u2019instant.
+                Aucun formateur sélectionné pour l'instant.
               </p>
             )}
           </div>
@@ -318,7 +317,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
         return (
           <div className="wizard-step fade-in">
             <h2 className="mb-1 flex items-center gap-0-5">
-              <Users size={20} className="text-primary" /> \u00c9tape 3\u00a0: \u00c9tudiants
+              <Users size={20} className="text-primary" /> Étape 3 : Étudiants
             </h2>
 
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'1rem', marginBottom:'1.25rem' }}>
@@ -338,18 +337,18 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                     ))
                   }
                   {allStudents.filter(s => !formData.students.find(st => st.id === s.id)).length === 0 && (
-                    <p className="text-sm text-muted" style={{textAlign:'center', padding:'1rem 0'}}>Aucun \u00e9tudiant disponible</p>
+                    <p className="text-sm text-muted" style={{textAlign:'center', padding:'1rem 0'}}>Aucun étudiant disponible</p>
                   )}
                 </div>
               </div>
 
               {/* Nouveau inline */}
               <div className="card" style={{padding:'1rem'}}>
-                <h3 className="text-sm font-bold mb-1">Nouveau compte \u00e9tudiant (Inline)</h3>
+                <h3 className="text-sm font-bold mb-1">Nouveau compte étudiant (Inline)</h3>
                 <div style={{ display:'flex', flexDirection:'column', gap:'0.6rem' }}>
                   <div>
-                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Pr\u00e9nom *</label>
-                    <input type="text" className="input input-sm" placeholder="Pr\u00e9nom"
+                    <label className="text-xs font-bold text-muted block" style={{marginBottom:'3px'}}>Prénom *</label>
+                    <input type="text" className="input input-sm" placeholder="Prénom"
                       value={newStudent.first_name}
                       onChange={e => setNewStudent({ ...newStudent, first_name: e.target.value })} />
                   </div>
@@ -366,7 +365,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                       onChange={e => setNewStudent({ ...newStudent, email: e.target.value })} />
                   </div>
                   <button className="btn btn-primary w-full" style={{marginTop:'0.25rem'}} onClick={addNewStudent}>
-                    <Plus size={14} /> Cr\u00e9er et Inscrire
+                    <Plus size={14} /> Créer et Inscrire
                   </button>
                 </div>
               </div>
@@ -374,7 +373,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
 
             {formData.students.length > 0 && (
               <div>
-                <label className="text-sm font-bold" style={{display:'block', marginBottom:'0.75rem'}}>\u00c9tudiants \u00e0 inscrire :</label>
+                <label className="text-sm font-bold" style={{display:'block', marginBottom:'0.75rem'}}>Étudiants à inscrire :</label>
                 <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'0.75rem' }}>
                   {formData.students.map((st, idx) => (
                     <div key={idx} className="card" style={{ padding:'1rem', borderLeft:'4px solid var(--success)' }}>
@@ -395,7 +394,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
             )}
             {formData.students.length === 0 && (
               <p className="text-sm text-muted" style={{textAlign:'center', padding:'1rem', background:'#f8f9fa', borderRadius:'8px', border:'1px dashed var(--surface-border)'}}>
-                Aucun \u00e9tudiant inscrit pour l\u2019instant.
+                Aucun étudiant inscrit pour l'instant.
               </p>
             )}
           </div>
@@ -406,11 +405,11 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
         return (
           <div className="wizard-step fade-in">
             <h2 className="mb-1 flex items-center gap-0-5">
-              <CreditCard size={20} className="text-primary" /> \u00c9tape 4\u00a0: Paiements \u00c9tudiants
+              <CreditCard size={20} className="text-primary" /> Étape 4 : Paiements Étudiants
             </h2>
             {formData.students.length === 0 && (
               <p className="text-sm text-muted" style={{textAlign:'center', padding:'2rem', background:'#f8f9fa', borderRadius:'8px'}}>
-                Aucun \u00e9tudiant inscrit. Revenez \u00e0 l\u2019\u00e9tape 3.
+                Aucun étudiant inscrit. Revenez à l'étape 3.
               </p>
             )}
             <div style={{ display:'flex', flexDirection:'column', gap:'1rem' }}>
@@ -461,7 +460,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
         return (
           <div className="wizard-step fade-in">
             <h2 className="mb-1 flex items-center gap-0-5">
-              <CheckCircle size={20} className="text-primary" /> \u00c9tape 5\u00a0: R\u00e9capitulatif
+              <CheckCircle size={20} className="text-primary" /> Étape 5 : Récapitulatif
             </h2>
             <div className="grid-2 mb-1">
               <div className="card" style={{padding:'1rem'}}>
@@ -474,7 +473,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
                 <div style={{ display:'flex', gap:'1rem', marginTop:'0.5rem' }}>
                   <div style={{flex:1, textAlign:'center'}}>
                     <div className="text-lg font-bold">{formData.students.length}</div>
-                    <div className="text-xs text-muted">\u00c9tudiants</div>
+                    <div className="text-xs text-muted">Étudiants</div>
                   </div>
                   <div style={{flex:1, textAlign:'center'}}>
                     <div className="text-lg font-bold">{formData.trainers.length}</div>
@@ -485,15 +484,15 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
             </div>
 
             <div className="card mb-1" style={{padding:'1rem'}}>
-              <h3 className="text-sm font-bold mb-1" style={{borderBottom:'1px solid var(--surface-border)', paddingBottom:'0.5rem'}}>Sommaire financier estim\u00e9</h3>
+              <h3 className="text-sm font-bold mb-1" style={{borderBottom:'1px solid var(--surface-border)', paddingBottom:'0.5rem'}}>Sommaire financier estimé</h3>
               <div style={{ display:'flex', justifyContent:'space-between', padding:'0.4rem 0', borderBottom:'1px solid #f0f2f5' }}>
-                <span>Chiffre d\u2019Affaire (CA) total :</span>
+                <span>Chiffre d'Affaire (CA) total :</span>
                 <span className="font-bold text-success">
                   {formData.students.reduce((sum, st) => sum + (formData.training.price * (1 - st.discount / 100)), 0).toLocaleString()} MAD
                 </span>
               </div>
               <div style={{ display:'flex', justifyContent:'space-between', padding:'0.4rem 0', borderBottom:'1px solid #f0f2f5' }}>
-                <span>Total Acomptes pr\u00e9vus :</span>
+                <span>Total Acomptes prévus :</span>
                 <span className="font-bold">
                   {formData.students.reduce((sum, st) => sum + (st.upfront || 0), 0).toLocaleString()} MAD
                 </span>
@@ -537,10 +536,10 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
             </div>
             <div>
               <h1 style={{ color:'white', fontWeight:700, fontSize:'1.2rem', margin:0 }}>
-                {draftName ? `Modification\u00a0: ${draftName}` : 'Assistant de Lancement'}
+                {draftName ? `Modification : ${draftName}` : 'Assistant de Lancement'}
               </h1>
               <p style={{ color:'rgba(255,255,255,0.75)', fontSize:'0.85rem', margin:0 }}>
-                Configurez votre formation en 5 \u00e9tapes rapides.
+                Configurez votre formation en 5 étapes rapides.
               </p>
             </div>
           </div>
@@ -590,7 +589,7 @@ export default function LaunchTrainingWizard({ initialData, initialStep, draftNa
         <div style={{ padding:'1rem 1.5rem', display:'flex', justifyContent:'space-between', background:'white', borderTop:'1px solid var(--surface-border)' }}>
           <button className="btn" style={{ background:'#f0f2f5', border:'1px solid var(--surface-border)' }}
             onClick={prevStep} disabled={currentStep === 1 || isLaunching}>
-            <ChevronLeft size={18} /> Pr\u00e9c\u00e9dent
+            <ChevronLeft size={18} /> Précédent
           </button>
           {currentStep < steps.length && (
             <button className="btn btn-primary" onClick={nextStep}
