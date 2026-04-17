@@ -22,7 +22,7 @@ export default function Sidebar() {
   const { logout, user } = useAuth();
 
   const menuItems = [
-    { path: '/', name: 'Tableau de bord', icon: LayoutDashboard },
+    { path: '/', name: 'Tableau de bord', icon: LayoutDashboard, end: true },
     { path: '/users/students', name: 'Étudiants', icon: Users },
     { path: '/trainers', name: 'Formateurs', icon: GraduationCap },
     { path: '/formations/catalog', name: 'Catalogue', icon: BookOpen },
@@ -46,7 +46,8 @@ export default function Sidebar() {
         {menuItems.map(item => (
           <NavLink 
             key={item.path} 
-            to={item.path} 
+            to={item.path}
+            end={item.end || false}
             className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}
           >
             <item.icon size={20} />
