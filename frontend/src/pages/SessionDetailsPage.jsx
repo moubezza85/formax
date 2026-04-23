@@ -284,9 +284,9 @@ export default function SessionDetailsPage() {
                       onClick={() => toggleAttendance(stu.id)}
                     >
                       <div className={`w-3 h-3 rounded-full flex items-center justify-center text-white font-bold mb-0-5 ${isSelected ? 'bg-success' : 'bg-error'}`}>
-                        {stu.first_name[0]}{stu.last_name[0]}
+                        {stu.first_name?.[0] || '?'}{stu.last_name?.[0] || ''}
                       </div>
-                      <span className="text-sm font-bold leading-tight">{stu.first_name} {stu.last_name}</span>
+                      <span className="text-sm font-bold leading-tight">{(stu.first_name || '') + ' ' + (stu.last_name || '') || 'Étudiant sans nom'}</span>
                       <div className="mt-0-5">
                         {isSelected ? (
                           <div className="flex items-center gap-0-5 text-success text-xs font-bold"><UserCheck size={14}/> Présent</div>
